@@ -1,14 +1,14 @@
 import {
   AlignLeft,
   Download,
-  FileText,
   List,
   Loader2,
   Subtitles,
+  X,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-// ── Global çeviri dil listesi ──
+// ── Global çeviri dilleri — value kesinlikle ISO 639-1 kodu ──
 const TRANSLATE_LANGUAGES = [
   { code: '', label: 'Çeviri yok' },
   { code: 'tr', label: 'Türkçe' },
@@ -61,6 +61,9 @@ export default function TranscriptTab({
   currentVideoTime,
 }) {
   const [viewMode, setViewMode] = useState('list')
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportFormat, setExportFormat] = useState('txt')
+  const [exportTimestamps, setExportTimestamps] = useState(true)
   const activeLineRef = useRef(null)
 
   // ── Aktif satır değiştiğinde otomatik scroll ──
@@ -109,24 +112,31 @@ export default function TranscriptTab({
     URL.revokeObjectURL(url)
   }
 
-  function downloadTXT() {
-    const lines = transcript.map(
-      (line) => `[${formatTimeTXT(line.start)}] ${line.text}`
-    )
-    downloadBlob(lines.join('\n'), 'transcript.txt', 'text/plain;charset=utf-8')
-  }
-
-  function downloadSRT() {
-    const blocks = transcript.map((line, i) => {
-      const startTime = formatTimeSRT(line.start)
-      const endTime = formatTimeSRT(line.start + line.duration)
-      return `${i + 1}\n${startTime} --> ${endTime}\n${line.text}`
-    })
-    downloadBlob(
-      blocks.join('\n\n'),
-      'transcript.srt',
-      'text/plain;charset=utf-8'
-    )
+  function handleExportDownload() {
+    if (exportFormat === 'srt') {
+      const blocks = transcript.map((line, i) => {
+        const startTime = formatTimeSRT(line.start)
+        const endTime = formatTimeSRT(line.start + line.duration)
+        return `${i + 1}\n${startTime} --> ${endTime}\n${line.text}`
+      })
+      downloadBlob(
+        blocks.join('\n\n'),
+        'transcript.srt',
+        'text/plain;charset=utf-8'
+      )
+    } else {
+      // TXT
+      let content
+      if (exportTimestamps) {
+        content = transcript
+          .map((line) => `[${formatTimeTXT(line.start)}] ${line.text}`)
+          .join('\n')
+      } else {
+        content = transcript.map((line) => line.text).join(' ')
+      }
+      downloadBlob(content, 'transcript.txt', 'text/plain;charset=utf-8')
+    }
+    setShowExportModal(false)
   }
 
   // ── Aktif satır kontrolü ──
@@ -174,10 +184,10 @@ export default function TranscriptTab({
           </select>
         </div>
 
-        {/* Görünüm modu + Export butonları */}
+        {/* Görünüm modu + Export */}
         {transcript.length > 0 && (
-          <div className="flex gap-2">
-            {/* Görünüm modu toggle */}
+          <div className="flex gap-2 items-center">
+            {/* Görünüm toggle */}
             <div className="flex bg-zinc-800 rounded-lg border border-zinc-700 overflow-hidden">
               <button
                 onClick={() => setViewMode('list')}
@@ -203,20 +213,13 @@ export default function TranscriptTab({
               </button>
             </div>
 
-            {/* Export */}
+            {/* Export butonu */}
             <button
-              onClick={downloadTXT}
-              className="flex items-center gap-1.5 flex-1 justify-center bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3 py-1.5 rounded-lg border border-zinc-700 transition-colors cursor-pointer"
-            >
-              <FileText size={13} />
-              TXT
-            </button>
-            <button
-              onClick={downloadSRT}
+              onClick={() => setShowExportModal(true)}
               className="flex items-center gap-1.5 flex-1 justify-center bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3 py-1.5 rounded-lg border border-zinc-700 transition-colors cursor-pointer"
             >
               <Download size={13} />
-              SRT
+              Dışa Aktar
             </button>
           </div>
         )}
@@ -309,6 +312,132 @@ export default function TranscriptTab({
             </p>
           </div>
         )}
+
+      {/* ══════════════ EXPORT MODAL ══════════════ */}
+      {showExportModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+          onClick={() => setShowExportModal(false)}
+        >
+          <div
+            className="bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 flex flex-col gap-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Başlık */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-zinc-100 font-semibold text-base">
+                Dışa Aktarma Seçenekleri
+              </h2>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="text-zinc-500 hover:text-zinc-300 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Format seçimi */}
+            <div className="flex flex-col gap-2">
+              <label className="text-zinc-400 text-xs font-medium uppercase tracking-wide">
+                Format
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setExportFormat('txt')}
+                  className={`flex-1 py-2.5 text-sm rounded-lg border transition-colors cursor-pointer ${
+                    exportFormat === 'txt'
+                      ? 'bg-blue-600 border-blue-500 text-white'
+                      : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  TXT (Metin)
+                </button>
+                <button
+                  onClick={() => setExportFormat('srt')}
+                  className={`flex-1 py-2.5 text-sm rounded-lg border transition-colors cursor-pointer ${
+                    exportFormat === 'srt'
+                      ? 'bg-blue-600 border-blue-500 text-white'
+                      : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  SRT (Altyazı)
+                </button>
+              </div>
+            </div>
+
+            {/* Metin tipi — sadece TXT seçiliyse */}
+            {exportFormat === 'txt' && (
+              <div className="flex flex-col gap-2">
+                <label className="text-zinc-400 text-xs font-medium uppercase tracking-wide">
+                  Metin Tipi
+                </label>
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
+                      exportTimestamps
+                        ? 'bg-zinc-800 border-blue-500'
+                        : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="txtType"
+                      checked={exportTimestamps}
+                      onChange={() => setExportTimestamps(true)}
+                      className="accent-blue-500"
+                    />
+                    <div>
+                      <span className="text-zinc-200 text-sm">
+                        Zaman Damgalı
+                      </span>
+                      <p className="text-zinc-500 text-xs mt-0.5">
+                        [00:15] Metin satırı...
+                      </p>
+                    </div>
+                  </label>
+                  <label
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
+                      !exportTimestamps
+                        ? 'bg-zinc-800 border-blue-500'
+                        : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="txtType"
+                      checked={!exportTimestamps}
+                      onChange={() => setExportTimestamps(false)}
+                      className="accent-blue-500"
+                    />
+                    <div>
+                      <span className="text-zinc-200 text-sm">Düz Metin</span>
+                      <p className="text-zinc-500 text-xs mt-0.5">
+                        Zaman damgasız paragraf metni
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Butonlar */}
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="flex-1 py-2.5 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg border border-zinc-700 transition-colors cursor-pointer"
+              >
+                İptal
+              </button>
+              <button
+                onClick={handleExportDownload}
+                className="flex-1 py-2.5 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors cursor-pointer font-medium"
+              >
+                İndir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

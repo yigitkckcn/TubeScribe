@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import PlaylistTab from './PlaylistTab'
 import TranscriptTab from './TranscriptTab'
 
@@ -23,9 +22,9 @@ export default function Sidebar({
   onTranslateChange,
   onSeek,
   currentVideoTime,
+  activeTab,
+  onTabChange,
 }) {
-  const [activeTab, setActiveTab] = useState('playlist')
-
   return (
     <div className="flex flex-col h-full bg-zinc-900 border-l border-zinc-800 overflow-hidden">
       {/* Sekme başlıkları */}
@@ -33,7 +32,7 @@ export default function Sidebar({
         {TABS.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => onTabChange(tab.key)}
             className={`flex-1 py-3 text-sm font-medium transition-colors cursor-pointer ${
               activeTab === tab.key
                 ? 'text-zinc-100 border-b-2 border-blue-500'

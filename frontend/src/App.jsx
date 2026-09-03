@@ -20,6 +20,7 @@ export default function App() {
   const [transcriptError, setTranscriptError] = useState('')
   const [searchError, setSearchError] = useState('')
   const [currentVideoTime, setCurrentVideoTime] = useState(0)
+  const [activeTab, setActiveTab] = useState('playlist')
 
   const playerRef = useRef(null)
   const intervalRef = useRef(null)
@@ -29,7 +30,7 @@ export default function App() {
     playerRef.current = event.target
   }
 
-  // ── Zaman takibi: oynarken 500ms aralıkla güncelle ──
+  // ── Zaman takibi ──
   const startTimeTracking = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current)
     intervalRef.current = setInterval(() => {
@@ -47,7 +48,6 @@ export default function App() {
   }, [])
 
   function handleStateChange(event) {
-    // 1 = playing
     if (event.data === 1) {
       startTimeTracking()
     } else {
@@ -63,7 +63,7 @@ export default function App() {
     }
   }
 
-  // ── Arama ──
+  // ── Arama: sonuçlar gelince Sıradakiler sekmesine geç, video oynatma ──
   async function handleSearch(query) {
     if (!query.trim()) return
     setIsLoading(true)
@@ -85,6 +85,9 @@ export default function App() {
         })
         setSearchResults(data.results || [])
       }
+
+      // Sonuçlar geldi → Sıradakiler sekmesine otomatik geç
+      setActiveTab('playlist')
     } catch (err) {
       console.error('Arama hatası:', err)
       setSearchError('Arama sırasında bir hata oluştu. Lütfen tekrar deneyin.')
@@ -105,6 +108,9 @@ export default function App() {
     setTranslateTo('')
     setCurrentVideoTime(0)
     setTranscriptLoading(true)
+
+    // Video seçilince Transkript sekmesine geç
+    setActiveTab('transcript')
 
     try {
       const { data: subsData } = await axios.get(
@@ -195,6 +201,8 @@ export default function App() {
             onTranslateChange={handleTranslateChange}
             onSeek={handleSeek}
             currentVideoTime={currentVideoTime}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
           />
         </div>
       </div>
