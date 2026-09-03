@@ -1,6 +1,6 @@
+import { useState } from 'react'
 import PlaylistTab from './PlaylistTab'
 import TranscriptTab from './TranscriptTab'
-import { useState } from 'react'
 
 const TABS = [
   { key: 'playlist', label: 'Sıradakiler' },
@@ -22,6 +22,7 @@ export default function Sidebar({
   onLangChange,
   onTranslateChange,
   onSeek,
+  currentVideoTime,
 }) {
   const [activeTab, setActiveTab] = useState('playlist')
 
@@ -65,6 +66,7 @@ export default function Sidebar({
             onLangChange={onLangChange}
             onTranslateChange={onTranslateChange}
             onSeek={onSeek}
+            currentVideoTime={currentVideoTime}
           />
         )}
       </div>

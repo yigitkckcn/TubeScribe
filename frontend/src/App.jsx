@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import VideoArea from './components/VideoArea'
@@ -19,16 +19,43 @@ export default function App() {
   const [transcriptLoading, setTranscriptLoading] = useState(false)
   const [transcriptError, setTranscriptError] = useState('')
   const [searchError, setSearchError] = useState('')
+  const [currentVideoTime, setCurrentVideoTime] = useState(0)
 
-  // YouTube player referansı — re-render'larda kaybolmaz
   const playerRef = useRef(null)
+  const intervalRef = useRef(null)
 
-  // ── Player hazır olduğunda referansı kaydet ──
+  // ── Player hazır ──
   function handlePlayerReady(event) {
     playerRef.current = event.target
   }
 
-  // ── Transkript satırına tıklanınca videoyu o saniyeye atla ──
+  // ── Zaman takibi: oynarken 500ms aralıkla güncelle ──
+  const startTimeTracking = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current)
+    intervalRef.current = setInterval(() => {
+      if (playerRef.current) {
+        setCurrentVideoTime(playerRef.current.getCurrentTime())
+      }
+    }, 500)
+  }, [])
+
+  const stopTimeTracking = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+  }, [])
+
+  function handleStateChange(event) {
+    // 1 = playing
+    if (event.data === 1) {
+      startTimeTracking()
+    } else {
+      stopTimeTracking()
+    }
+  }
+
+  // ── Seek ──
   function handleSeek(seconds) {
     if (playerRef.current) {
       playerRef.current.seekTo(seconds, true)
@@ -36,7 +63,7 @@ export default function App() {
     }
   }
 
-  // ── Arama veya Playlist ──
+  // ── Arama ──
   async function handleSearch(query) {
     if (!query.trim()) return
     setIsLoading(true)
@@ -76,6 +103,7 @@ export default function App() {
     setTranscriptError('')
     setSelectedLang('')
     setTranslateTo('')
+    setCurrentVideoTime(0)
     setTranscriptLoading(true)
 
     try {
@@ -146,6 +174,7 @@ export default function App() {
             title={currentVideoTitle}
             channel={currentChannel}
             onPlayerReady={handlePlayerReady}
+            onStateChange={handleStateChange}
           />
         </div>
 
@@ -165,6 +194,7 @@ export default function App() {
             onLangChange={handleLangChange}
             onTranslateChange={handleTranslateChange}
             onSeek={handleSeek}
+            currentVideoTime={currentVideoTime}
           />
         </div>
       </div>
