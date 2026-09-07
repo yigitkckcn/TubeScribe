@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 
 class VideoResult(BaseModel):
@@ -41,3 +41,32 @@ class TranscriptResponse(BaseModel):
     language: str
     language_code: str
     transcript: List[TranscriptLine]
+
+
+class FormatInfo(BaseModel):
+    format_id: str
+    ext: str
+    resolution: Optional[str] = None
+    filesize: Optional[int] = None
+    filesize_approx: Optional[int] = None
+    fps: Optional[float] = None
+    vcodec: Optional[str] = None
+    acodec: Optional[str] = None
+    url: str
+    label: str
+
+
+class FormatsResponse(BaseModel):
+    title: str
+    formats: List[FormatInfo]
+
+
+class SavedVideo(BaseModel):
+    id: str
+    title: str
+    channel: str
+    thumbnail: str
+
+
+class SavedSyncRequest(BaseModel):
+    videos: List[SavedVideo]

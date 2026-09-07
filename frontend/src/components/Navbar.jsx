@@ -1,7 +1,7 @@
 import { Loader2, Search } from 'lucide-react'
 import { useState } from 'react'
 
-export default function Navbar({ onSearch, isLoading }) {
+export default function Navbar({ onSearch, isLoading, onReset }) {
   const [query, setQuery] = useState('')
 
   function handleSubmit(e) {
@@ -11,12 +11,15 @@ export default function Navbar({ onSearch, isLoading }) {
 
   return (
     <nav className="flex items-center gap-4 bg-zinc-950 px-4 py-2.5 border-b border-zinc-800">
-      {/* Logo */}
-      <div className="flex items-center gap-2 shrink-0">
-        <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+      {/* Logo — tıklayınca ana sayfaya dön */}
+      <div
+        onClick={onReset}
+        className="flex items-center gap-2 shrink-0 cursor-pointer group"
+      >
+        <div className="w-8 h-8 bg-red-600 group-hover:bg-red-500 rounded-lg flex items-center justify-center transition-colors">
           <span className="text-white font-bold text-sm">▶</span>
         </div>
-        <span className="text-zinc-100 font-semibold text-lg tracking-tight">
+        <span className="text-zinc-100 group-hover:text-white font-semibold text-lg tracking-tight transition-colors">
           TubiScribe
         </span>
       </div>
@@ -45,7 +48,6 @@ export default function Navbar({ onSearch, isLoading }) {
         </div>
       </form>
 
-      {/* Sağ boşluk (dengeleme) */}
       <div className="w-28 shrink-0" />
     </nav>
   )

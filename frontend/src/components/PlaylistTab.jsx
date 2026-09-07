@@ -38,7 +38,7 @@ export default function PlaylistTab({
       {videos.map((video, index) => (
         <div
           key={video.id}
-          onClick={() => onVideoSelect(video.id, video.title, video.channel)}
+          onClick={() => onVideoSelect(video.id, video.title, video.channel, video.thumbnail)}
           className={`flex gap-3 p-2 rounded-lg cursor-pointer transition-colors group ${
             currentVideoId === video.id
               ? 'bg-zinc-800'

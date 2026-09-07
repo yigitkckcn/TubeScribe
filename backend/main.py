@@ -1,17 +1,32 @@
-from typing import Optional
+import json
+import os
+import shutil
+import tempfile
+import urllib.request
+from pathlib import Path
+from typing import List, Optional
+from urllib.parse import quote
 
 import yt_dlp
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, StreamingResponse
+from starlette.background import BackgroundTask
 from youtube_transcript_api import (
     NoTranscriptFound,
+    NotTranslatable,
     TranscriptsDisabled,
+    TranslationLanguageNotAvailable,
     YouTubeTranscriptApi,
 )
 
 from schemas import (
+    FormatInfo,
+    FormatsResponse,
     LanguageModel,
     PlaylistResponse,
+    SavedSyncRequest,
+    SavedVideo,
     SearchResponse,
     SubtitlesResponse,
     TranscriptLine,
@@ -29,12 +44,56 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# youtube-transcript-api v1.x instance tabanlı API kullanır
 transcript_api = YouTubeTranscriptApi()
+
+# ──────────────────────────── KAYDEDİLENLER VERİTABANI ─────────────────────────
+SAVED_DIR = Path("saved")
+SAVED_FILE = SAVED_DIR / "saved_videos.json"
+
+def _load_saved() -> list:
+    if not SAVED_FILE.exists():
+        return []
+    try:
+        with open(SAVED_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+def _save_saved(data: list):
+    SAVED_DIR.mkdir(exist_ok=True)
+    with open(SAVED_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+@app.get("/api/saved", response_model=List[SavedVideo])
+def get_saved_videos():
+    return _load_saved()
+
+@app.post("/api/saved")
+def add_saved_video(video: SavedVideo):
+    data = _load_saved()
+    if not any(v.get("id") == video.id for v in data):
+        data.append(video.model_dump())
+        _save_saved(data)
+    return {"status": "ok"}
+
+@app.delete("/api/saved/{video_id}")
+def remove_saved_video(video_id: str):
+    data = _load_saved()
+    data = [v for v in data if v.get("id") != video_id]
+    _save_saved(data)
+    return {"status": "ok"}
+
+@app.put("/api/saved/sync")
+def sync_saved_videos(req: SavedSyncRequest):
+    # İçe aktarılan (import) listeyi mevcut olanla birleştir veya üzerine yaz
+    current_data = {v["id"]: v for v in _load_saved()}
+    for new_v in req.videos:
+        current_data[new_v.id] = new_v.model_dump()
+    _save_saved(list(current_data.values()))
+    return {"status": "ok"}
 
 
 def _format_duration(seconds: Optional[int]) -> str:
-    """Saniyeleri HH:MM:SS veya MM:SS formatına çevirir."""
     if seconds is None:
         return "0:00"
     seconds = int(seconds)
@@ -46,12 +105,10 @@ def _format_duration(seconds: Optional[int]) -> str:
 
 
 def _build_thumbnail(video_id: str) -> str:
-    """Video ID'den yüksek çözünürlüklü thumbnail URL'si oluşturur."""
     return f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
 
 
 def _entry_to_video(entry: dict) -> VideoResult:
-    """yt-dlp entry dict'ini VideoResult modeline dönüştürür."""
     video_id = entry.get("id", "")
     return VideoResult(
         id=video_id,
@@ -62,54 +119,45 @@ def _entry_to_video(entry: dict) -> VideoResult:
     )
 
 
-# ──────────────────────────── 1. ARAMA ────────────────────────────
+def _format_filesize(size: Optional[int]) -> str:
+    if not size or size == 0:
+        return "Boyut Bilinmiyor"
+    if size < 1024 * 1024:
+        return f"{size / 1024:.0f} KB"
+    if size < 1024 * 1024 * 1024:
+        return f"{size / (1024 * 1024):.1f} MB"
+    return f"{size / (1024 * 1024 * 1024):.2f} GB"
 
+
+# ──────────────────────────── 1. ARAMA ────────────────────────────
 
 @app.get("/api/search", response_model=SearchResponse)
 async def search_videos(q: str = Query(..., min_length=1, description="Arama terimi")):
-    ydl_opts = {
-        "quiet": True,
-        "skip_download": True,
-        "extract_flat": True,
-    }
-
+    ydl_opts = {"quiet": True, "skip_download": True, "extract_flat": True}
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             result = ydl.extract_info(f"ytsearch15:{q}", download=False)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Arama sırasında hata: {exc}")
-
     entries = result.get("entries") or []
     videos = [_entry_to_video(e) for e in entries if e]
-
     return SearchResponse(results=videos)
 
 
 # ──────────────────────────── 2. PLAYLIST ─────────────────────────
 
-
 @app.get("/api/playlist", response_model=PlaylistResponse)
 async def get_playlist(url: str = Query(..., description="YouTube playlist URL'si")):
-    ydl_opts = {
-        "quiet": True,
-        "skip_download": True,
-        "extract_flat": True,
-    }
-
+    ydl_opts = {"quiet": True, "skip_download": True, "extract_flat": True}
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             result = ydl.extract_info(url, download=False)
     except Exception as exc:
-        raise HTTPException(
-            status_code=500, detail=f"Playlist ayrıştırma hatası: {exc}"
-        )
-
+        raise HTTPException(status_code=500, detail=f"Playlist ayrıştırma hatası: {exc}")
     if not result:
         raise HTTPException(status_code=404, detail="Playlist bulunamadı.")
-
     entries = result.get("entries") or []
     videos = [_entry_to_video(e) for e in entries if e]
-
     return PlaylistResponse(
         title=result.get("title", "Bilinmeyen Playlist"),
         channel=result.get("uploader", result.get("channel", "Bilinmeyen Kanal")),
@@ -119,7 +167,6 @@ async def get_playlist(url: str = Query(..., description="YouTube playlist URL's
 
 # ──────────────────────────── 3. ALT YAZI DİLLERİ ────────────────
 
-
 @app.get("/api/subtitles/{video_id}", response_model=SubtitlesResponse)
 async def list_subtitles(video_id: str):
     try:
@@ -127,9 +174,7 @@ async def list_subtitles(video_id: str):
     except (TranscriptsDisabled, NoTranscriptFound):
         return SubtitlesResponse(languages=[])
     except Exception as exc:
-        raise HTTPException(
-            status_code=500, detail=f"Altyazı bilgisi alınamadı: {exc}"
-        )
+        raise HTTPException(status_code=500, detail=f"Altyazı bilgisi alınamadı: {exc}")
 
     languages = []
     for t in transcript_list:
@@ -141,12 +186,10 @@ async def list_subtitles(video_id: str):
                 is_translatable=t.is_translatable,
             )
         )
-
     return SubtitlesResponse(languages=languages)
 
 
 # ──────────────────────────── 4. TRANSKRİPT ──────────────────────
-
 
 @app.get("/api/transcript/{video_id}", response_model=TranscriptResponse)
 async def get_transcript(
@@ -157,54 +200,160 @@ async def get_transcript(
     try:
         transcript_list = transcript_api.list(video_id)
     except (TranscriptsDisabled, NoTranscriptFound) as exc:
-        raise HTTPException(
-            status_code=404, detail=f"Bu video için transkript bulunamadı: {exc}"
-        )
+        raise HTTPException(status_code=404, detail=f"Bu video için transkript bulunamadı: {exc}")
     except Exception as exc:
-        raise HTTPException(
-            status_code=500, detail=f"Transkript listesi alınamadı: {exc}"
-        )
+        raise HTTPException(status_code=500, detail=f"Transkript listesi alınamadı: {exc}")
 
-    # İstenen dili bul; bulamazsa ilk mevcut transkripti seç
+    transcript = None
     try:
         transcript = transcript_list.find_transcript([lang])
     except NoTranscriptFound:
+        pass
+
+    if transcript is None:
         try:
             transcript = next(iter(transcript_list))
         except StopIteration:
-            raise HTTPException(
-                status_code=404,
-                detail="Hiçbir transkript mevcut değil.",
-            )
+            raise HTTPException(status_code=404, detail="Hiçbir transkript mevcut değil.")
 
-    # Çeviri isteği varsa uygula
-    if translate_to:
+    if translate_to and translate_to != transcript.language_code:
+        source = transcript
+        if not source.is_translatable:
+            source = None
+            for t in transcript_list:
+                if t.is_translatable:
+                    source = t
+                    break
+            if source is None:
+                raise HTTPException(status_code=400, detail="Bu video için çevrilebilir transkript bulunamadı.")
         try:
-            transcript = transcript.translate(translate_to)
+            transcript = source.translate(translate_to)
+        except (NotTranslatable, TranslationLanguageNotAvailable) as exc:
+            raise HTTPException(status_code=400, detail=f"Bu dil için çeviri desteklenmiyor. Lütfen başka bir dil seçin.")
         except Exception as exc:
-            raise HTTPException(
-                status_code=500, detail=f"Çeviri sırasında hata: {exc}"
-            )
+            raise HTTPException(status_code=500, detail=f"Çeviri sırasında hata: {exc}")
 
-    # Veriyi çek
     try:
         fetched = transcript.fetch()
     except Exception as exc:
-        raise HTTPException(
-            status_code=500, detail=f"Transkript verisi alınamadı: {exc}"
+        raise HTTPException(status_code=500, detail=f"Transkript verisi alınamadı: {exc}")
+
+    lines = [TranscriptLine(text=s.text, start=s.start, duration=s.duration) for s in fetched]
+    return TranscriptResponse(language=fetched.language, language_code=fetched.language_code, transcript=lines)
+
+
+# ──────────────────────────── 5. VİDEO & SES FORMAT LİSTESİ ────────────
+
+@app.get("/api/formats/{video_id}", response_model=FormatsResponse)
+async def get_formats(video_id: str):
+    ydl_opts = {"quiet": True, "skip_download": True}
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Format bilgisi alınamadı: {exc}")
+    if not info:
+        raise HTTPException(status_code=404, detail="Video bulunamadı.")
+
+    raw_formats = info.get("formats") or []
+    title = info.get("title", "video")
+
+    # Sesi bul
+    audio_formats = [f for f in raw_formats if f.get("acodec") != "none" and f.get("vcodec") == "none"]
+    best_audio = audio_formats[-1] if audio_formats else None
+    best_audio_size = (best_audio.get("filesize") or best_audio.get("filesize_approx") or 0) if best_audio else 0
+
+    video_formats = [f for f in raw_formats if f.get("vcodec") != "none"]
+    resolutions = {}
+    for f in video_formats:
+        h = f.get("height")
+        if not h: continue
+        if h not in resolutions or (f.get("ext") == "mp4" and resolutions[h].get("ext") != "mp4"):
+            resolutions[h] = f
+
+    formats = []
+    for h, f in resolutions.items():
+        v_size = f.get("filesize") or f.get("filesize_approx") or 0
+        total_size = v_size + best_audio_size
+        size_str = f" ({_format_filesize(total_size)})" if total_size > 0 else ""
+        formats.append(
+            FormatInfo(
+                format_id=str(h),
+                ext="mp4",
+                resolution=f"{h}p",
+                filesize=total_size,
+                url="",
+                label=f"🎬 MP4 {h}p{size_str} (Sesli)"
+            )
         )
 
-    lines = [
-        TranscriptLine(
-            text=snippet.text,
-            start=snippet.start,
-            duration=snippet.duration,
-        )
-        for snippet in fetched
-    ]
+    formats.sort(key=lambda x: -int(x.format_id))
 
-    return TranscriptResponse(
-        language=fetched.language,
-        language_code=fetched.language_code,
-        transcript=lines,
+    if best_audio:
+        size_str = f" ({_format_filesize(best_audio_size)})" if best_audio_size > 0 else ""
+        formats.append(
+            FormatInfo(
+                format_id="mp3",
+                ext="mp3",
+                resolution=None,
+                filesize=best_audio_size,
+                url="",
+                label=f"🎵 MP3 Ses{size_str}"
+            )
+        )
+
+    return FormatsResponse(title=title, formats=formats)
+
+
+# ──────────────────────────── 6. VİDEO/SES YEREL İNDİRME & BİRLEŞTİRME ────────────
+
+@app.get("/api/download/{video_id}")
+def download_merged_video(video_id: str, format_id: str = Query(...)):
+    temp_dir = tempfile.mkdtemp()
+    out_tmpl = os.path.join(temp_dir, '%(title)s.%(ext)s')
+
+    ydl_opts = {
+        'outtmpl': out_tmpl,
+        'quiet': True,
+    }
+
+    if format_id == "mp3":
+        ydl_opts['format'] = 'bestaudio/best'
+        ydl_opts['postprocessors'] = [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }]
+    else:
+        ydl_opts['format'] = f"bestvideo[height<={format_id}][ext=mp4]+bestaudio[ext=m4a]/best[height<={format_id}][ext=mp4]/best"
+        ydl_opts['merge_output_format'] = 'mp4'
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=True)
+            
+        files = os.listdir(temp_dir)
+        if not files:
+            raise HTTPException(status_code=500, detail="Dosya oluşturulamadı.")
+            
+        filename = files[0]
+        file_path = os.path.join(temp_dir, filename)
+    except Exception as exc:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=f"İndirme ve birleştirme hatası: {exc}")
+
+    def cleanup():
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    safe_filename = quote(filename)
+    headers = {
+        "Content-Disposition": f"attachment; filename*=UTF-8''{safe_filename}",
+        "Content-Type": "application/octet-stream",
+    }
+
+    return FileResponse(
+        path=file_path,
+        filename=filename,
+        background=BackgroundTask(cleanup),
+        headers=headers
     )

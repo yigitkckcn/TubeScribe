@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import VideoArea from './components/VideoArea'
@@ -11,6 +11,7 @@ export default function App() {
   const [currentVideoId, setCurrentVideoId] = useState(null)
   const [currentVideoTitle, setCurrentVideoTitle] = useState('')
   const [currentChannel, setCurrentChannel] = useState('')
+  const [currentThumbnail, setCurrentThumbnail] = useState('')
   const [transcript, setTranscript] = useState([])
   const [availableLangs, setAvailableLangs] = useState([])
   const [selectedLang, setSelectedLang] = useState('')
@@ -21,9 +22,94 @@ export default function App() {
   const [searchError, setSearchError] = useState('')
   const [currentVideoTime, setCurrentVideoTime] = useState(0)
   const [activeTab, setActiveTab] = useState('playlist')
+  const [savedVideos, setSavedVideos] = useState([])
 
   const playerRef = useRef(null)
   const intervalRef = useRef(null)
+
+  // ── Sayfa ilk açıldığında Backend'den Kaydedilenleri Çek ──
+  useEffect(() => {
+    fetchSavedVideos()
+  }, [])
+
+  async function fetchSavedVideos() {
+    try {
+      const { data } = await axios.get(`${API}/saved`)
+      setSavedVideos(data || [])
+    } catch (err) {
+      console.error('Kaydedilenleri çekerken hata:', err)
+    }
+  }
+
+  // ── Logo tıklanınca her şeyi sıfırla ──
+  function resetApp() {
+    stopTimeTracking()
+    playerRef.current = null
+    setSearchResults([])
+    setCurrentVideoId(null)
+    setCurrentVideoTitle('')
+    setCurrentChannel('')
+    setCurrentThumbnail('')
+    setTranscript([])
+    setAvailableLangs([])
+    setSelectedLang('')
+    setTranslateTo('')
+    setIsLoading(false)
+    setTranscriptLoading(false)
+    setTranscriptError('')
+    setSearchError('')
+    setCurrentVideoTime(0)
+    setActiveTab('playlist')
+  }
+
+  // ── Kaydet / Kaldır (Backend'e istek atılır) ──
+  async function toggleSaveVideo() {
+    if (!currentVideoId) return
+    const isSaved = savedVideos.some((v) => v.id === currentVideoId)
+
+    try {
+      if (isSaved) {
+        await axios.delete(`${API}/saved/${currentVideoId}`)
+        setSavedVideos((prev) => prev.filter((v) => v.id !== currentVideoId))
+      } else {
+        const newVideo = {
+          id: currentVideoId,
+          title: currentVideoTitle,
+          channel: currentChannel,
+          thumbnail: currentThumbnail || `https://i.ytimg.com/vi/${currentVideoId}/hqdefault.jpg`,
+        }
+        await axios.post(`${API}/saved`, newVideo)
+        setSavedVideos((prev) => [...prev, newVideo])
+      }
+    } catch (err) {
+      console.error('Kaydetme işlemi başarısız:', err)
+      alert('Video kaydedilirken bir hata oluştu.')
+    }
+  }
+
+  async function removeSavedVideo(videoId) {
+    try {
+      await axios.delete(`${API}/saved/${videoId}`)
+      setSavedVideos((prev) => prev.filter((v) => v.id !== videoId))
+    } catch (err) {
+      console.error('Video silme başarısız:', err)
+    }
+  }
+
+  async function handleImportSaved(importedVideos) {
+    try {
+      await axios.put(`${API}/saved/sync`, { videos: importedVideos })
+      await fetchSavedVideos() // Güncel listeyi çek
+      alert('Videolar başarıyla içe aktarıldı!')
+    } catch (err) {
+      console.error('İçe aktarma hatası:', err)
+      alert('İçe aktarma sırasında bir hata oluştu.')
+    }
+  }
+
+  const isVideoSaved = currentVideoId
+    ? savedVideos.some((v) => v.id === currentVideoId)
+    : false
 
   // ── Player hazır ──
   function handlePlayerReady(event) {
@@ -55,7 +141,6 @@ export default function App() {
     }
   }
 
-  // ── Seek ──
   function handleSeek(seconds) {
     if (playerRef.current) {
       playerRef.current.seekTo(seconds, true)
@@ -63,7 +148,7 @@ export default function App() {
     }
   }
 
-  // ── Arama: sonuçlar gelince Sıradakiler sekmesine geç, video oynatma ──
+  // ── Arama ──
   async function handleSearch(query) {
     if (!query.trim()) return
     setIsLoading(true)
@@ -71,22 +156,14 @@ export default function App() {
     setSearchResults([])
 
     try {
-      const isPlaylist =
-        query.includes('playlist') || query.includes('list=')
-
+      const isPlaylist = query.includes('playlist') || query.includes('list=')
       if (isPlaylist) {
-        const { data } = await axios.get(`${API}/playlist`, {
-          params: { url: query },
-        })
+        const { data } = await axios.get(`${API}/playlist`, { params: { url: query } })
         setSearchResults(data.videos || [])
       } else {
-        const { data } = await axios.get(`${API}/search`, {
-          params: { q: query },
-        })
+        const { data } = await axios.get(`${API}/search`, { params: { q: query } })
         setSearchResults(data.results || [])
       }
-
-      // Sonuçlar geldi → Sıradakiler sekmesine otomatik geç
       setActiveTab('playlist')
     } catch (err) {
       console.error('Arama hatası:', err)
@@ -97,10 +174,11 @@ export default function App() {
   }
 
   // ── Video seçimi ──
-  async function handleVideoSelect(videoId, title, channel) {
+  async function handleVideoSelect(videoId, title, channel, thumbnail) {
     setCurrentVideoId(videoId)
     setCurrentVideoTitle(title)
     setCurrentChannel(channel || '')
+    setCurrentThumbnail(thumbnail || '')
     setTranscript([])
     setAvailableLangs([])
     setTranscriptError('')
@@ -108,14 +186,10 @@ export default function App() {
     setTranslateTo('')
     setCurrentVideoTime(0)
     setTranscriptLoading(true)
-
-    // Video seçilince Transkript sekmesine geç
     setActiveTab('transcript')
 
     try {
-      const { data: subsData } = await axios.get(
-        `${API}/subtitles/${videoId}`
-      )
+      const { data: subsData } = await axios.get(`${API}/subtitles/${videoId}`)
       const langs = subsData.languages || []
       setAvailableLangs(langs)
 
@@ -124,7 +198,6 @@ export default function App() {
         setTranscriptLoading(false)
         return
       }
-
       const firstLang = langs[0].language_code
       setSelectedLang(firstLang)
       await fetchTranscript(videoId, firstLang, '')
@@ -136,29 +209,30 @@ export default function App() {
     }
   }
 
-  // ── Transkript çek ──
   async function fetchTranscript(videoId, lang, translateTarget) {
     setTranscriptLoading(true)
     setTranscriptError('')
-
     try {
       const params = { lang }
       if (translateTarget) params.translate_to = translateTarget
-
-      const { data } = await axios.get(`${API}/transcript/${videoId}`, {
-        params,
-      })
+      const { data } = await axios.get(`${API}/transcript/${videoId}`, { params })
       setTranscript(data.transcript || [])
     } catch (err) {
       console.error('Transkript hatası:', err)
       setTranscript([])
-      setTranscriptError('Transkript alınamadı.')
+      const detail = err.response?.data?.detail
+      if (detail && detail.includes('çeviri desteklenmiyor')) {
+        setTranscriptError('Bu dil için çeviri desteklenmiyor.')
+      } else if (detail && detail.includes('çevrilebilir')) {
+        setTranscriptError('Bu video için çevrilebilir transkript bulunamadı.')
+      } else {
+        setTranscriptError('Transkript alınamadı.')
+      }
     } finally {
       setTranscriptLoading(false)
     }
   }
 
-  // ── Dil değişikliği ──
   function handleLangChange(lang) {
     setSelectedLang(lang)
     if (currentVideoId) fetchTranscript(currentVideoId, lang, translateTo)
@@ -171,7 +245,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen w-full bg-zinc-950 overflow-hidden">
-      <Navbar onSearch={handleSearch} isLoading={isLoading} />
+      <Navbar onSearch={handleSearch} isLoading={isLoading} onReset={resetApp} />
 
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-2 overflow-hidden">
@@ -181,6 +255,8 @@ export default function App() {
             channel={currentChannel}
             onPlayerReady={handlePlayerReady}
             onStateChange={handleStateChange}
+            isSaved={isVideoSaved}
+            onToggleSave={toggleSaveVideo}
           />
         </div>
 
@@ -203,6 +279,9 @@ export default function App() {
             currentVideoTime={currentVideoTime}
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            savedVideos={savedVideos}
+            onRemoveSaved={removeSavedVideo}
+            onImportSaved={handleImportSaved}
           />
         </div>
       </div>
