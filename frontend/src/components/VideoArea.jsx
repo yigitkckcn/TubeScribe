@@ -49,13 +49,56 @@ export default function VideoArea({
     }
   }
 
-  function handleDownload(formatId) {
-    // Kullanıcıyı arka planda birleştirme yapıldığına dair uyar
-    setDownloadNotice('Video hazırlanıyor. Tarayıcınızın indirme penceresi açılana kadar lütfen bekleyin (Videonun uzunluğuna göre birleştirme sürebilir)...')
+  async function handleDownload(formatId) {
+    setDownloadNotice('İndirme başlatılıyor...')
     
-    // Yönlendir (İndirme bittiğinde tarayıcı otomatik pop-up çıkartır)
-    const downloadUrl = `${API}/download/${videoId}?format_id=${formatId}`
-    window.location.href = downloadUrl
+    try {
+      // 1. Görevi başlat
+      const startRes = await axios.post(`${API}/download/start`, {
+        video_id: videoId,
+        format_id: formatId
+      })
+      const taskId = startRes.data.task_id
+
+      // 2. Durumu kontrol et (Polling)
+      const interval = setInterval(async () => {
+        try {
+          const statusRes = await axios.get(`${API}/download/status/${taskId}`)
+          const { ready, progress, error } = statusRes.data
+
+          if (error) {
+            clearInterval(interval)
+            setDownloadNotice('')
+            setFormatsError('İndirme hatası: ' + error)
+          } else if (ready) {
+            clearInterval(interval)
+            setDownloadNotice('İndirme tamamlandı, dosya tarayıcıya aktarılıyor...')
+            
+            // 3. Dosyayı indir (Hidden iframe ile)
+            const iframe = document.createElement('iframe')
+            iframe.style.display = 'none'
+            iframe.src = `${API}/download/file/${taskId}`
+            document.body.appendChild(iframe)
+            
+            // Temizlik
+            setTimeout(() => {
+              document.body.removeChild(iframe)
+              setDownloadNotice('')
+            }, 5000)
+          } else {
+            setDownloadNotice(`Hazırlanıyor: ${progress}`)
+          }
+        } catch (err) {
+          clearInterval(interval)
+          setDownloadNotice('')
+          setFormatsError('Durum kontrol edilemedi.')
+        }
+      }, 1500)
+
+    } catch (err) {
+      setDownloadNotice('')
+      setFormatsError('İndirme başlatılamadı.')
+    }
   }
 
   if (!videoId) {
