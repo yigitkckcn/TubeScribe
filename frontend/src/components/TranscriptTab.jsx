@@ -1,8 +1,11 @@
 import {
   AlignLeft,
+  ChevronDown,
+  ChevronUp,
   Download,
   List,
   Loader2,
+  Search,
   Subtitles,
   X,
 } from 'lucide-react'
@@ -64,20 +67,121 @@ export default function TranscriptTab({
   const [showExportModal, setShowExportModal] = useState(false)
   const [exportFormat, setExportFormat] = useState('txt')
   const [exportTimestamps, setExportTimestamps] = useState(true)
+  
+  // ── Arama State'leri ──
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isSearchVisible, setIsSearchVisible] = useState(false)
+  const [matchIndices, setMatchIndices] = useState([])
+  const [currentMatchIdx, setCurrentMatchIdx] = useState(-1)
+
   const activeLineRef = useRef(null)
+  const lineRefs = useRef([])
+  const searchInputRef = useRef(null)
+
+  // ── Ctrl+F Dinleyicisi ──
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Sadece Ctrl+F veya Cmd+F tuşlarına basıldığında arama kutusunu aç
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault()
+        setIsSearchVisible(true)
+        setTimeout(() => searchInputRef.current?.focus(), 50)
+      } else if (e.key === 'Escape' && isSearchVisible) {
+        setIsSearchVisible(false)
+        setSearchQuery('')
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSearchVisible])
+
+  // ── Arama Yapıldığında Eşleşmeleri Bul ──
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setMatchIndices([])
+      setCurrentMatchIdx(-1)
+      return
+    }
+
+    const query = searchQuery.toLowerCase()
+    const indices = []
+    transcript.forEach((line, idx) => {
+      if (line.text.toLowerCase().includes(query)) {
+        indices.push(idx)
+      }
+    })
+
+    setMatchIndices(indices)
+    setCurrentMatchIdx(indices.length > 0 ? 0 : -1)
+  }, [searchQuery, transcript])
+
+  // ── Arama Sonucuna Scroll Yapma ──
+  useEffect(() => {
+    if (currentMatchIdx >= 0 && matchIndices.length > 0) {
+      const lineIndex = matchIndices[currentMatchIdx]
+      const el = lineRefs.current[lineIndex]
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }
+  }, [currentMatchIdx, matchIndices])
+
+  function handleNextMatch() {
+    if (matchIndices.length === 0) return
+    setCurrentMatchIdx((prev) => (prev + 1) % matchIndices.length)
+  }
+
+  function handlePrevMatch() {
+    if (matchIndices.length === 0) return
+    setCurrentMatchIdx((prev) => (prev - 1 + matchIndices.length) % matchIndices.length)
+  }
 
   // ── Aktif satır değiştiğinde otomatik scroll ──
   useEffect(() => {
-    if (activeLineRef.current) {
+    const isSearching = isSearchVisible && searchQuery.trim().length > 0
+    // Kullanıcı arama yapıyorsa, videonun süresine göre otomatik kaydırmayı durdur
+    if (activeLineRef.current && !isSearching) {
       activeLineRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest',
       })
     }
-  }, [currentVideoTime])
+  }, [currentVideoTime, isSearchVisible, searchQuery])
+
+  // ── Arama metni vurgulayıcı ──
+  function renderHighlightedText(text, index) {
+    if (!searchQuery.trim()) return text
+
+    // regex özel karakterlerini kaçır
+    const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'))
+    
+    const isCurrentMatchLine = matchIndices[currentMatchIdx] === index
+
+    return (
+      <>
+        {parts.map((part, i) => {
+          if (part.toLowerCase() === searchQuery.toLowerCase()) {
+            return (
+              <mark
+                key={i}
+                className={`rounded-sm px-0.5 ${
+                  isCurrentMatchLine 
+                    ? 'bg-orange-500 text-white font-medium shadow-sm' 
+                    : 'bg-yellow-500/40 text-yellow-100'
+                }`}
+              >
+                {part}
+              </mark>
+            )
+          }
+          return <span key={i}>{part}</span>
+        })}
+      </>
+    )
+  }
 
   // ── Zaman formatlayıcılar ──
-
   function formatTimeShort(seconds) {
     const m = Math.floor(seconds / 60)
     const s = Math.floor(seconds % 60)
@@ -99,7 +203,6 @@ export default function TranscriptTab({
   }
 
   // ── Dosya indirme ──
-
   function downloadBlob(content, filename, mimeType) {
     const blob = new Blob([content], { type: mimeType })
     const url = URL.createObjectURL(blob)
@@ -125,7 +228,6 @@ export default function TranscriptTab({
         'text/plain;charset=utf-8'
       )
     } else {
-      // TXT
       let content
       if (exportTimestamps) {
         content = transcript
@@ -184,11 +286,11 @@ export default function TranscriptTab({
           </select>
         </div>
 
-        {/* Görünüm modu + Export */}
+        {/* Görünüm modu, Arama ve Export */}
         {transcript.length > 0 && (
           <div className="flex gap-2 items-center">
             {/* Görünüm toggle */}
-            <div className="flex bg-zinc-800 rounded-lg border border-zinc-700 overflow-hidden">
+            <div className="flex bg-zinc-800 rounded-lg border border-zinc-700 overflow-hidden shrink-0">
               <button
                 onClick={() => setViewMode('list')}
                 title="Liste Görünümü"
@@ -213,6 +315,22 @@ export default function TranscriptTab({
               </button>
             </div>
 
+            {/* Arama Butonu */}
+            <button
+              onClick={() => {
+                setIsSearchVisible(!isSearchVisible)
+                if (!isSearchVisible) setTimeout(() => searchInputRef.current?.focus(), 50)
+              }}
+              title="Transkriptte Ara (Ctrl+F)"
+              className={`px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                isSearchVisible || searchQuery
+                  ? 'bg-blue-600 border-blue-500 text-white'
+                  : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <Search size={14} />
+            </button>
+
             {/* Export butonu */}
             <button
               onClick={() => setShowExportModal(true)}
@@ -221,6 +339,61 @@ export default function TranscriptTab({
               <Download size={13} />
               Dışa Aktar
             </button>
+          </div>
+        )}
+
+        {/* ── ARAMA ÇUBUĞU (Ctrl+F) ── */}
+        {isSearchVisible && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800/80 rounded-lg border border-zinc-600 shadow-sm mt-0.5">
+            <Search size={14} className="text-zinc-400 shrink-0" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  if (e.shiftKey) handlePrevMatch()
+                  else handleNextMatch()
+                }
+              }}
+              placeholder="Transkriptte kelime ara..."
+              className="flex-1 bg-transparent text-sm text-zinc-100 focus:outline-none placeholder-zinc-500 min-w-0"
+            />
+            {searchQuery && (
+              <span className="text-xs text-zinc-400 tabular-nums shrink-0 font-medium">
+                {matchIndices.length > 0 ? currentMatchIdx + 1 : 0} / {matchIndices.length}
+              </span>
+            )}
+            <div className="flex items-center gap-0.5 shrink-0 border-l border-zinc-700 pl-2 ml-1">
+              <button
+                onClick={handlePrevMatch}
+                disabled={matchIndices.length === 0}
+                className="p-1 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700 rounded disabled:opacity-30 cursor-pointer transition-colors"
+                title="Önceki (Shift+Enter)"
+              >
+                <ChevronUp size={16} />
+              </button>
+              <button
+                onClick={handleNextMatch}
+                disabled={matchIndices.length === 0}
+                className="p-1 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700 rounded disabled:opacity-30 cursor-pointer transition-colors"
+                title="Sonraki (Enter)"
+              >
+                <ChevronDown size={16} />
+              </button>
+              <button
+                onClick={() => {
+                  setIsSearchVisible(false)
+                  setSearchQuery('')
+                }}
+                className="p-1 text-zinc-400 hover:text-red-400 hover:bg-zinc-700 rounded cursor-pointer transition-colors ml-1"
+                title="Kapat (Esc)"
+              >
+                <X size={16} />
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -257,7 +430,10 @@ export default function TranscriptTab({
             return (
               <div
                 key={index}
-                ref={active ? activeLineRef : null}
+                ref={(el) => {
+                  lineRefs.current[index] = el
+                  if (active) activeLineRef.current = el
+                }}
                 onClick={() => onSeek(line.start)}
                 className={`flex gap-3 px-2 py-2 rounded-md cursor-pointer transition-colors ${
                   active
@@ -277,7 +453,7 @@ export default function TranscriptTab({
                     active ? 'text-blue-300' : 'text-zinc-300'
                   }`}
                 >
-                  {line.text}
+                  {renderHighlightedText(line.text, index)}
                 </span>
               </div>
             )
@@ -297,7 +473,10 @@ export default function TranscriptTab({
                 return (
                   <span
                     key={index}
-                    ref={active ? activeLineRef : null}
+                    ref={(el) => {
+                      lineRefs.current[index] = el
+                      if (active) activeLineRef.current = el
+                    }}
                     onClick={() => onSeek(line.start)}
                     className={`cursor-pointer transition-colors rounded px-0.5 ${
                       active
@@ -305,7 +484,7 @@ export default function TranscriptTab({
                         : 'text-zinc-300 hover:bg-zinc-800'
                     }`}
                   >
-                    {line.text}{' '}
+                    {renderHighlightedText(line.text, index)}{' '}
                   </span>
                 )
               })}
@@ -367,7 +546,7 @@ export default function TranscriptTab({
 
             {/* Metin tipi — sadece TXT seçiliyse */}
             {exportFormat === 'txt' && (
-              <div className="flex flex-col gap-2">
+               <div className="flex flex-col gap-2">
                 <label className="text-zinc-400 text-xs font-medium uppercase tracking-wide">
                   Metin Tipi
                 </label>
