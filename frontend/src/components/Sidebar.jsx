@@ -31,17 +31,17 @@ export default function Sidebar({
   onImportSaved,
 }) {
   return (
-    <div className="flex flex-col h-full bg-zinc-900 border-l border-zinc-800 overflow-hidden">
+    <div className="flex flex-col h-full bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 overflow-hidden">
       {/* Sekme başlıkları */}
-      <div className="flex shrink-0 border-b border-zinc-800">
+      <div className="flex shrink-0 border-b border-zinc-200 dark:border-zinc-800">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => onTabChange(tab.key)}
             className={`flex-1 py-3 text-sm font-medium transition-colors cursor-pointer relative ${
               activeTab === tab.key
-                ? 'text-zinc-100 border-b-2 border-blue-500'
-                : 'text-zinc-500 hover:text-zinc-300'
+                ? 'text-zinc-900 dark:text-zinc-100 border-b-2 border-blue-500'
+                : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
             }`}
           >
             {tab.label}

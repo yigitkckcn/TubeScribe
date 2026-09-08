@@ -259,7 +259,7 @@ export default function TranscriptTab({
             value={selectedLang}
             onChange={(e) => onLangChange(e.target.value)}
             disabled={availableLangs.length === 0}
-            className="flex-1 bg-zinc-800 text-zinc-300 text-xs px-3 py-2 rounded-lg border border-zinc-700 focus:outline-none focus:border-zinc-500 cursor-pointer disabled:opacity-50"
+            className="flex-1 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 focus:outline-none focus:border-zinc-500 cursor-pointer disabled:opacity-50"
           >
             {availableLangs.length === 0 ? (
               <option>Dil yok</option>
@@ -276,7 +276,7 @@ export default function TranscriptTab({
           <select
             value={translateTo}
             onChange={(e) => onTranslateChange(e.target.value)}
-            className="flex-1 bg-zinc-800 text-zinc-300 text-xs px-3 py-2 rounded-lg border border-zinc-700 focus:outline-none focus:border-zinc-500 cursor-pointer"
+            className="flex-1 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 focus:outline-none focus:border-zinc-500 cursor-pointer"
           >
             {TRANSLATE_LANGUAGES.map((lang) => (
               <option key={lang.code} value={lang.code}>
@@ -290,7 +290,7 @@ export default function TranscriptTab({
         {transcript.length > 0 && (
           <div className="flex gap-2 items-center">
             {/* Görünüm toggle */}
-            <div className="flex bg-zinc-800 rounded-lg border border-zinc-700 overflow-hidden shrink-0">
+            <div className="flex bg-zinc-200 dark:bg-zinc-800 rounded-lg border border-zinc-300 dark:border-zinc-700 overflow-hidden shrink-0">
               <button
                 onClick={() => setViewMode('list')}
                 title="Liste Görünümü"
@@ -325,7 +325,7 @@ export default function TranscriptTab({
               className={`px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${
                 isSearchVisible || searchQuery
                   ? 'bg-blue-600 border-blue-500 text-white'
-                  : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
+                  : 'bg-zinc-200 dark:bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
               }`}
             >
               <Search size={14} />
@@ -334,7 +334,7 @@ export default function TranscriptTab({
             {/* Export butonu */}
             <button
               onClick={() => setShowExportModal(true)}
-              className="flex items-center gap-1.5 flex-1 justify-center bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3 py-1.5 rounded-lg border border-zinc-700 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 flex-1 justify-center bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-200 hover:dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
             >
               <Download size={13} />
               Dışa Aktar
@@ -344,8 +344,8 @@ export default function TranscriptTab({
 
         {/* ── ARAMA ÇUBUĞU (Ctrl+F) ── */}
         {isSearchVisible && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800/80 rounded-lg border border-zinc-600 shadow-sm mt-0.5">
-            <Search size={14} className="text-zinc-400 shrink-0" />
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100/80 dark:bg-zinc-200 dark:bg-zinc-800/80 rounded-lg border border-zinc-300 dark:border-zinc-600 shadow-sm mt-0.5">
+            <Search size={14} className="text-zinc-600 dark:text-zinc-400 shrink-0" />
             <input
               ref={searchInputRef}
               type="text"
@@ -359,18 +359,18 @@ export default function TranscriptTab({
                 }
               }}
               placeholder="Transkriptte kelime ara..."
-              className="flex-1 bg-transparent text-sm text-zinc-100 focus:outline-none placeholder-zinc-500 min-w-0"
+              className="flex-1 bg-transparent text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none placeholder-zinc-500 min-w-0"
             />
             {searchQuery && (
-              <span className="text-xs text-zinc-400 tabular-nums shrink-0 font-medium">
+              <span className="text-xs text-zinc-600 dark:text-zinc-400 tabular-nums shrink-0 font-medium">
                 {matchIndices.length > 0 ? currentMatchIdx + 1 : 0} / {matchIndices.length}
               </span>
             )}
-            <div className="flex items-center gap-0.5 shrink-0 border-l border-zinc-700 pl-2 ml-1">
+            <div className="flex items-center gap-0.5 shrink-0 border-l border-zinc-300 dark:border-zinc-700 pl-2 ml-1">
               <button
                 onClick={handlePrevMatch}
                 disabled={matchIndices.length === 0}
-                className="p-1 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700 rounded disabled:opacity-30 cursor-pointer transition-colors"
+                className="p-1 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 hover:dark:text-zinc-100 hover:bg-zinc-200 hover:dark:bg-zinc-700 rounded disabled:opacity-30 cursor-pointer transition-colors"
                 title="Önceki (Shift+Enter)"
               >
                 <ChevronUp size={16} />
@@ -378,7 +378,7 @@ export default function TranscriptTab({
               <button
                 onClick={handleNextMatch}
                 disabled={matchIndices.length === 0}
-                className="p-1 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700 rounded disabled:opacity-30 cursor-pointer transition-colors"
+                className="p-1 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 hover:dark:text-zinc-100 hover:bg-zinc-200 hover:dark:bg-zinc-700 rounded disabled:opacity-30 cursor-pointer transition-colors"
                 title="Sonraki (Enter)"
               >
                 <ChevronDown size={16} />
@@ -388,7 +388,7 @@ export default function TranscriptTab({
                   setIsSearchVisible(false)
                   setSearchQuery('')
                 }}
-                className="p-1 text-zinc-400 hover:text-red-400 hover:bg-zinc-700 rounded cursor-pointer transition-colors ml-1"
+                className="p-1 text-zinc-600 dark:text-zinc-400 hover:text-red-400 hover:bg-zinc-200 hover:dark:bg-zinc-700 rounded cursor-pointer transition-colors ml-1"
                 title="Kapat (Esc)"
               >
                 <X size={16} />
@@ -400,7 +400,7 @@ export default function TranscriptTab({
 
       {/* ── Loading ── */}
       {isLoading && (
-        <div className="flex items-center justify-center flex-1 text-zinc-500 gap-2">
+        <div className="flex items-center justify-center flex-1 text-zinc-500 dark:text-zinc-500 gap-2">
           <Loader2 size={20} className="animate-spin" />
           <span className="text-sm">Transkript yükleniyor...</span>
         </div>
@@ -408,7 +408,7 @@ export default function TranscriptTab({
 
       {/* ── Hata ── */}
       {!isLoading && error && (
-        <div className="flex flex-col items-center justify-center flex-1 text-zinc-500 gap-2">
+        <div className="flex flex-col items-center justify-center flex-1 text-zinc-500 dark:text-zinc-500 gap-2">
           <Subtitles size={32} strokeWidth={1} />
           <p className="text-sm text-center px-4">{error}</p>
         </div>
@@ -416,7 +416,7 @@ export default function TranscriptTab({
 
       {/* ── Boş ── */}
       {!isLoading && !error && transcript.length === 0 && (
-        <div className="flex flex-col items-center justify-center flex-1 text-zinc-500 gap-2">
+        <div className="flex flex-col items-center justify-center flex-1 text-zinc-500 dark:text-zinc-500 gap-2">
           <Subtitles size={32} strokeWidth={1} />
           <p className="text-sm">Transkript görüntülemek için video seçin</p>
         </div>
@@ -437,8 +437,8 @@ export default function TranscriptTab({
                 onClick={() => onSeek(line.start)}
                 className={`flex gap-3 px-2 py-2 rounded-md cursor-pointer transition-colors ${
                   active
-                    ? 'bg-zinc-800 border-l-2 border-blue-500 pl-1.5'
-                    : 'hover:bg-zinc-800/60 border-l-2 border-transparent pl-1.5'
+                    ? 'bg-zinc-200 dark:bg-zinc-800 border-l-2 border-blue-500 pl-1.5'
+                    : 'hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 border-l-2 border-transparent pl-1.5'
                 }`}
               >
                 <span
@@ -480,8 +480,8 @@ export default function TranscriptTab({
                     onClick={() => onSeek(line.start)}
                     className={`cursor-pointer transition-colors rounded px-0.5 ${
                       active
-                        ? 'bg-blue-500/20 text-blue-300'
-                        : 'text-zinc-300 hover:bg-zinc-800'
+                        ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300'
+                        : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800'
                     }`}
                   >
                     {renderHighlightedText(line.text, index)}{' '}
@@ -499,17 +499,17 @@ export default function TranscriptTab({
           onClick={() => setShowExportModal(false)}
         >
           <div
-            className="bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 flex flex-col gap-5"
+            className="bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 flex flex-col gap-5"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Başlık */}
             <div className="flex items-center justify-between">
-              <h2 className="text-zinc-100 font-semibold text-base">
+              <h2 className="text-zinc-900 dark:text-zinc-100 font-semibold text-base">
                 Dışa Aktarma Seçenekleri
               </h2>
               <button
                 onClick={() => setShowExportModal(false)}
-                className="text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                className="text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 hover:dark:text-zinc-300 cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -517,7 +517,7 @@ export default function TranscriptTab({
 
             {/* Format seçimi */}
             <div className="flex flex-col gap-2">
-              <label className="text-zinc-400 text-xs font-medium uppercase tracking-wide">
+              <label className="text-zinc-600 dark:text-zinc-400 text-xs font-medium uppercase tracking-wide">
                 Format
               </label>
               <div className="flex gap-2">
@@ -526,7 +526,7 @@ export default function TranscriptTab({
                   className={`flex-1 py-2.5 text-sm rounded-lg border transition-colors cursor-pointer ${
                     exportFormat === 'txt'
                       ? 'bg-blue-600 border-blue-500 text-white'
-                      : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
+                      : 'bg-zinc-200 dark:bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   TXT (Metin)
@@ -536,7 +536,7 @@ export default function TranscriptTab({
                   className={`flex-1 py-2.5 text-sm rounded-lg border transition-colors cursor-pointer ${
                     exportFormat === 'srt'
                       ? 'bg-blue-600 border-blue-500 text-white'
-                      : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
+                      : 'bg-zinc-200 dark:bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   SRT (Altyazı)
@@ -547,15 +547,15 @@ export default function TranscriptTab({
             {/* Metin tipi — sadece TXT seçiliyse */}
             {exportFormat === 'txt' && (
                <div className="flex flex-col gap-2">
-                <label className="text-zinc-400 text-xs font-medium uppercase tracking-wide">
+                <label className="text-zinc-600 dark:text-zinc-400 text-xs font-medium uppercase tracking-wide">
                   Metin Tipi
                 </label>
                 <div className="flex flex-col gap-1.5">
                   <label
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
                       exportTimestamps
-                        ? 'bg-zinc-800 border-blue-500'
-                        : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
+                        ? 'bg-zinc-200 dark:bg-zinc-800 border-blue-500'
+                        : 'bg-zinc-200 dark:bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
                     }`}
                   >
                     <input
@@ -566,10 +566,10 @@ export default function TranscriptTab({
                       className="accent-blue-500"
                     />
                     <div>
-                      <span className="text-zinc-200 text-sm">
+                      <span className="text-zinc-800 dark:text-zinc-200 text-sm">
                         Zaman Damgalı
                       </span>
-                      <p className="text-zinc-500 text-xs mt-0.5">
+                      <p className="text-zinc-500 dark:text-zinc-500 text-xs mt-0.5">
                         [00:15] Metin satırı...
                       </p>
                     </div>
@@ -577,8 +577,8 @@ export default function TranscriptTab({
                   <label
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
                       !exportTimestamps
-                        ? 'bg-zinc-800 border-blue-500'
-                        : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
+                        ? 'bg-zinc-200 dark:bg-zinc-800 border-blue-500'
+                        : 'bg-zinc-200 dark:bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
                     }`}
                   >
                     <input
@@ -589,8 +589,8 @@ export default function TranscriptTab({
                       className="accent-blue-500"
                     />
                     <div>
-                      <span className="text-zinc-200 text-sm">Düz Metin</span>
-                      <p className="text-zinc-500 text-xs mt-0.5">
+                      <span className="text-zinc-800 dark:text-zinc-200 text-sm">Düz Metin</span>
+                      <p className="text-zinc-500 dark:text-zinc-500 text-xs mt-0.5">
                         Zaman damgasız paragraf metni
                       </p>
                     </div>
@@ -603,7 +603,7 @@ export default function TranscriptTab({
             <div className="flex gap-3 pt-1">
               <button
                 onClick={() => setShowExportModal(false)}
-                className="flex-1 py-2.5 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg border border-zinc-700 transition-colors cursor-pointer"
+                className="flex-1 py-2.5 text-sm bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-200 hover:dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
               >
                 İptal
               </button>

@@ -7,6 +7,7 @@ import VideoArea from './components/VideoArea'
 const API = 'http://localhost:8000/api'
 
 export default function App() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
   const [searchResults, setSearchResults] = useState([])
   const [currentVideoId, setCurrentVideoId] = useState(null)
   const [currentVideoTitle, setCurrentVideoTitle] = useState('')
@@ -32,6 +33,21 @@ export default function App() {
     fetchSavedVideos()
   }, [])
 
+  // ── Tema Değişimi ──
+  useEffect(() => {
+    const root = document.documentElement
+    if (theme === 'dark') {
+      root.classList.add('dark')
+    } else {
+      root.classList.remove('dark')
+    }
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  function toggleTheme() {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
+  }
+
   async function fetchSavedVideos() {
     try {
       const { data } = await axios.get(`${API}/saved`)
@@ -40,6 +56,50 @@ export default function App() {
       console.error('Kaydedilenleri çekerken hata:', err)
     }
   }
+
+  // ── Global Klavye Kısayolları (Oynat/Duraklat, Atla) ──
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      // Kullanıcı bir form elemanında (arama kutusu vb.) yazı yazıyorsa kısayolları yoksay
+      const activeTag = document.activeElement?.tagName?.toLowerCase()
+      if (
+        activeTag === 'input' ||
+        activeTag === 'textarea' ||
+        activeTag === 'select' ||
+        document.activeElement?.isContentEditable
+      ) {
+        return
+      }
+
+      if (!playerRef.current) return
+
+      switch (e.code) {
+        case 'Space':
+          e.preventDefault()
+          const state = playerRef.current.getPlayerState()
+          if (state === 1) {
+            // 1: Oynatılıyor
+            playerRef.current.pauseVideo()
+          } else {
+            playerRef.current.playVideo()
+          }
+          break
+        case 'ArrowLeft':
+          e.preventDefault()
+          playerRef.current.seekTo(Math.max(0, playerRef.current.getCurrentTime() - 5), true)
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          playerRef.current.seekTo(playerRef.current.getCurrentTime() + 5, true)
+          break
+        default:
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [])
 
   // ── Logo tıklanınca her şeyi sıfırla ──
   function resetApp() {
@@ -244,8 +304,14 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full bg-zinc-950 overflow-hidden">
-      <Navbar onSearch={handleSearch} isLoading={isLoading} onReset={resetApp} />
+    <div className="flex flex-col h-screen w-full bg-zinc-50 dark:bg-zinc-950 overflow-hidden">
+      <Navbar 
+        onSearch={handleSearch} 
+        isLoading={isLoading} 
+        onReset={resetApp} 
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
 
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-2 overflow-hidden">

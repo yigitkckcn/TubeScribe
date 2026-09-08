@@ -55,7 +55,7 @@ export default function SavedTab({
           onClick={exportJSON}
           title="Kaydedilenleri Dışa Aktar"
           disabled={!savedVideos || savedVideos.length === 0}
-          className="flex flex-1 items-center justify-center gap-1.5 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-300 text-xs rounded-lg border border-zinc-700 transition-colors cursor-pointer"
+          className="flex flex-1 items-center justify-center gap-1.5 px-3 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-200 hover:dark:bg-zinc-700 disabled:opacity-50 text-zinc-700 dark:text-zinc-300 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
         >
           <Download size={13} />
           Dışa Aktar
@@ -64,7 +64,7 @@ export default function SavedTab({
         <button
           onClick={() => fileInputRef.current?.click()}
           title="Yedeklenmiş Listeyi İçe Aktar"
-          className="flex flex-1 items-center justify-center gap-1.5 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded-lg border border-zinc-700 transition-colors cursor-pointer"
+          className="flex flex-1 items-center justify-center gap-1.5 px-3 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-200 hover:dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
         >
           <Upload size={13} />
           İçe Aktar
@@ -79,10 +79,10 @@ export default function SavedTab({
       </div>
 
       {(!savedVideos || savedVideos.length === 0) && (
-        <div className="flex flex-col items-center justify-center flex-1 text-zinc-500 gap-2">
+        <div className="flex flex-col items-center justify-center flex-1 text-zinc-500 dark:text-zinc-500 gap-2">
           <Bookmark size={32} strokeWidth={1} />
           <p className="text-sm">Henüz kaydedilen video yok</p>
-          <p className="text-xs text-zinc-600">
+          <p className="text-xs text-zinc-500 dark:text-zinc-600">
             Video oynatırken "Kaydet" butonuna basın
           </p>
         </div>
@@ -96,18 +96,18 @@ export default function SavedTab({
               key={video.id}
               className={`flex gap-3 p-2 rounded-lg cursor-pointer transition-colors group ${
                 currentVideoId === video.id
-                  ? 'bg-zinc-800'
-                  : 'hover:bg-zinc-800/60'
+                  ? 'bg-zinc-200 dark:bg-zinc-800'
+                  : 'hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60'
               }`}
             >
               {/* Sıra */}
-              <span className="text-zinc-500 text-xs font-medium w-5 shrink-0 flex items-center justify-center">
+              <span className="text-zinc-500 dark:text-zinc-500 text-xs font-medium w-5 shrink-0 flex items-center justify-center">
                 {index + 1}
               </span>
 
               {/* Thumbnail */}
               <div
-                className="relative w-28 shrink-0 aspect-video rounded-md overflow-hidden bg-zinc-800"
+                className="relative w-28 shrink-0 aspect-video rounded-md overflow-hidden bg-zinc-200 dark:bg-zinc-800"
                 onClick={() =>
                   onVideoSelect(video.id, video.title, video.channel, video.thumbnail)
                 }
@@ -126,10 +126,10 @@ export default function SavedTab({
                   onVideoSelect(video.id, video.title, video.channel, video.thumbnail)
                 }
               >
-                <span className="text-zinc-200 text-sm font-medium leading-snug line-clamp-2">
+                <span className="text-zinc-800 dark:text-zinc-200 text-sm font-medium leading-snug line-clamp-2">
                   {video.title}
                 </span>
-                <span className="text-zinc-500 text-xs">{video.channel}</span>
+                <span className="text-zinc-500 dark:text-zinc-500 text-xs">{video.channel}</span>
               </div>
 
               {/* Sil butonu */}
@@ -138,7 +138,7 @@ export default function SavedTab({
                   e.stopPropagation()
                   onRemoveSaved(video.id)
                 }}
-                className="self-center text-zinc-600 hover:text-red-400 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shrink-0"
+                className="self-center text-zinc-500 dark:text-zinc-600 hover:text-red-400 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shrink-0"
                 title="Kaydedilenlerden çıkar"
               >
                 <Trash2 size={14} />

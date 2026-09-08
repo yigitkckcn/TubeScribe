@@ -59,7 +59,7 @@ export default function VideoArea({
 
   if (!videoId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-zinc-500">
+      <div className="flex flex-col items-center justify-center h-full gap-4 text-zinc-500 dark:text-zinc-500">
         <MonitorPlay size={64} strokeWidth={1} />
         <p className="text-lg">Lütfen bir video arayın veya seçin</p>
       </div>
@@ -83,11 +83,11 @@ export default function VideoArea({
       {/* Video bilgileri + butonlar */}
       <div className="flex items-start justify-between gap-3 px-1">
         <div className="flex flex-col gap-1 min-w-0">
-          <h1 className="text-zinc-100 text-lg font-semibold leading-snug">
+          <h1 className="text-zinc-900 dark:text-zinc-100 text-lg font-semibold leading-snug">
             {title}
           </h1>
           {channel && (
-            <span className="text-sm text-zinc-400 font-medium">{channel}</span>
+            <span className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">{channel}</span>
           )}
         </div>
 
@@ -99,7 +99,7 @@ export default function VideoArea({
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
               isSaved
                 ? 'bg-blue-600/20 border-blue-500/50 text-blue-400 hover:bg-blue-600/30'
-                : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700'
+                : 'bg-zinc-200 dark:bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700'
             }`}
           >
             {isSaved ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
@@ -108,7 +108,7 @@ export default function VideoArea({
 
           <button
             onClick={openDownloadModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-200 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 hover:dark:bg-zinc-700 transition-colors cursor-pointer"
           >
             <Download size={14} />
             İndir
@@ -123,23 +123,23 @@ export default function VideoArea({
           onClick={() => setShowDownloadModal(false)}
         >
           <div
-            className="bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 flex flex-col gap-4"
+            className="bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 flex flex-col gap-4"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Başlık */}
             <div className="flex items-center justify-between">
-              <h2 className="text-zinc-100 font-semibold text-base">
+              <h2 className="text-zinc-900 dark:text-zinc-100 font-semibold text-base">
                 Videoyu İndir
               </h2>
               <button
                 onClick={() => setShowDownloadModal(false)}
-                className="text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                className="text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 hover:dark:text-zinc-300 cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <p className="text-zinc-400 text-xs line-clamp-1">{title}</p>
+            <p className="text-zinc-600 dark:text-zinc-400 text-xs line-clamp-1">{title}</p>
 
             {/* İndirme Başladı Bildirimi */}
             {downloadNotice && (
@@ -150,7 +150,7 @@ export default function VideoArea({
 
             {/* Loading */}
             {formatsLoading && (
-              <div className="flex items-center justify-center py-8 text-zinc-500 gap-2">
+              <div className="flex items-center justify-center py-8 text-zinc-500 dark:text-zinc-500 gap-2">
                 <Loader2 size={20} className="animate-spin" />
                 <span className="text-sm">Formatlar hesaplanıyor...</span>
               </div>
@@ -170,17 +170,17 @@ export default function VideoArea({
                   <button
                     key={f.format_id}
                     onClick={() => handleDownload(f.format_id)}
-                    className="flex items-center justify-between px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg border border-zinc-700 transition-colors cursor-pointer text-left"
+                    className="flex items-center justify-between px-3 py-2.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-200 hover:dark:bg-zinc-700 rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer text-left"
                   >
-                    <span className="text-zinc-200 text-sm">{f.label}</span>
-                    <Download size={14} className="text-zinc-400 shrink-0" />
+                    <span className="text-zinc-800 dark:text-zinc-200 text-sm">{f.label}</span>
+                    <Download size={14} className="text-zinc-600 dark:text-zinc-400 shrink-0" />
                   </button>
                 ))}
               </div>
             )}
 
             {!formatsLoading && !formatsError && formats.length === 0 && (
-              <p className="text-zinc-500 text-sm text-center py-4">
+              <p className="text-zinc-500 dark:text-zinc-500 text-sm text-center py-4">
                 İndirilebilir format bulunamadı.
               </p>
             )}
@@ -188,7 +188,7 @@ export default function VideoArea({
             {/* Kapat */}
             <button
               onClick={() => setShowDownloadModal(false)}
-              className="w-full py-2.5 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg border border-zinc-700 transition-colors cursor-pointer"
+              className="w-full py-2.5 text-sm bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-200 hover:dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
             >
               Kapat
             </button>
