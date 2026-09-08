@@ -16,7 +16,7 @@ TubiScribe, YouTube videolarını reklamsız, izleyicisiz (tracker-free) ve tama
 
 ## 🚀 Mevcut Özellikler (Neler Yapıldı?)
 
-Uygulamanın şu anki V1.0 sürümünde tamamen çalışan, test edilmiş ve optimize edilmiş özellikler şunlardır:
+Uygulamanın şu anki V1.2 sürümünde tamamen çalışan, test edilmiş ve optimize edilmiş özellikler şunlardır:
 
 ### 1. Güvenlik ve İzole İzleme Deneyimi
 * **Reklamsız ve Takipçisiz Altyapı:** Oynatıcı `youtube-nocookie.com` üzerinden çalıştırılarak üçüncü taraf reklam ve izleme çerezleri tamamen engellenmiştir.
