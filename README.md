@@ -1,191 +1,148 @@
 # TubiScribe
 
-### YouTube Gelişmiş Transkript Motoru ve Reklamsız Oynatıcı
-
-TubiScribe, standart YouTube deneyimini akademik ve odaklanmış bir çalışma ortamına dönüştüren bağımsız bir masaüstü web uygulamasıdır. Reklamsız ve dikkat dağıtıcılardan arındırılmış arayüzüyle videoları izlerken eş zamanlı transkript okuma, 35+ dile anlık çeviri, gelişmiş video indirme ve profesyonel formatlarda dışa aktarma imkânı sunar.
-
-> API Anahtarı Gerektirmez -- YouTube Data API kotasına takılmadan, sınırsız arama ve işlem yapma özgürlüğü sağlar.
+TubiScribe, YouTube videolarını reklamsız, izleyicisiz (tracker-free) ve tamamen gizlilik odaklı bir ortamda izlemenize olanak tanıyan gelişmiş bir masaüstü/web uygulamasıdır. İçerisinde barındırdığı akıllı transkript motoru, yüksek kaliteli medya indirici ve yerel veri yönetimi sayesinde standart bir video izleme deneyimini profesyonel bir araştırma ve arşivleme aracına dönüştürür.
 
 ---
 
-## İçindekiler
+## 📸 Ekran Görüntüleri
 
-- [Özellikler](#özellikler)
-- [Hızlı Başlangıç (Tek Komut)](#hızlı-başlangıç-tek-komut)
-- [Manuel Kurulum](#manuel-kurulum)
-- [Kullanım Rehberi](#kullanım-rehberi)
-- [Proje Mimarisi](#proje-mimarisi)
-- [API Referansı](#api-referansı)
-- [Teknoloji Yığını](#teknoloji-yığını)
-- [Sorun Giderme](#sorun-giderme)
-- [Güvenlik ve Gizlilik](#güvenlik-ve-gizlilik)
+* ![Karanlık Tema](docs/screenshots/DarkMode.png)
+* ![Aydınlık Tema](docs/screenshots/LightMode.png)
+* ![Transkript Örneği](docs/screenshots/TrasnkriptExample.png)
+* ![Video İndirme](docs/screenshots/Video%20İndirme.png)
 
 ---
 
-## Özellikler
+## 🚀 Mevcut Özellikler (Neler Yapıldı?)
 
-### Arama ve Keşif
-| Özellik | Açıklama |
-|---|---|
-| Sınırsız Arama | YouTube Data API kotası olmadan yt-dlp ile doğrudan video arama. |
-| Akıllı Playlist Desteği | Herhangi bir YouTube playlist linkini yapıştırın -- tüm videolar sırasıyla listelenir. |
+Uygulamanın şu anki V1.0 sürümünde tamamen çalışan, test edilmiş ve optimize edilmiş özellikler şunlardır:
 
-### Video Oynatıcı ve Kayıt Sistemi
-| Özellik | Açıklama |
-|---|---|
-| Reklamsız Oynatma | YouTube IFrame API üzerinden reklamsız, kesintisiz video akışı. |
-| Kalıcı Veritabanı | Kaydedilen videolar tarayıcı önbelleğinde değil, uygulama klasöründeki fiziksel bir JSON dosyasında (saved/saved_videos.json) kalıcı olarak saklanır. |
-| İçe ve Dışa Aktarma | Kaydedilen videolar listenizi JSON olarak dışa aktarabilir veya başka bilgisayardan içe aktarabilirsiniz. |
+### 1. Güvenlik ve İzole İzleme Deneyimi
+* **Reklamsız ve Takipçisiz Altyapı:** Oynatıcı `youtube-nocookie.com` üzerinden çalıştırılarak üçüncü taraf reklam ve izleme çerezleri tamamen engellenmiştir.
+* **CORS ve SSRF Koruması:** Sunucu taraflı istek sahteciliğine karşı katı URL filtrelemeleri eklenmiş, ağ erişimleri yerel ortamla (localhost) sınırlandırılmıştır.
 
-### İnteraktif Transkript ve Çeviri
-| Özellik | Açıklama |
-|---|---|
-| Senkronize Vurgulama | Video oynarken aktif satır vurgulanır ve panel otomatik kaydırılır. |
-| Tıkla-Atla (Seek) | Transkriptteki herhangi bir cümleye tıklayın, video o saniyeye atlasın. |
-| 35+ Dil Desteği | YouTube'un dahili motoru kullanılarak, desteklenmeyen dillerde otomatik akıllı hata yönetimi ile çeviri. |
+### 2. Akıllı Transkript ve Çeviri Motoru
+* **Anında Çeviri:** Videonun orijinal transkripti saniyeler içinde çekilebilir ve istenilen dile tek tıkla çevrilebilir.
+* **Kelime Bazlı Arama (Ctrl+F):** Transkript içerisinde entegre arama yapılabilir, eşleşen kelimeler anlık olarak sarı renkle vurgulanır.
+* **Senkronize Okuma:** Video oynatılırken okunan transkript satırı otomatik olarak belirginleşir ve kayar.
+* **Önbellekleme (LRU Cache):** RAM üzerindeki bellek önbelleği sayesinde diller arası geçişlerde API bekleme süresi ortadan kaldırılmış ve saniyelik geçişler sağlanmıştır.
 
-### Medya İndirme ve Dışa Aktarma
-| Özellik | Açıklama |
-|---|---|
-| Gelişmiş İndirme Motoru | YouTube'un ayrıştırdığı ses ve yüksek çözünürlüklü görüntü dosyalarını arka planda FFmpeg ile birleştirip tek bir MP4 dosyası olarak sunar. |
-| MP3 Desteği | Videoları doğrudan yüksek kaliteli MP3 (192kbps) formatında indirebilirsiniz. |
-| Metin Dışa Aktarma | Transkriptleri zaman damgalı TXT, düz metin (paragraf) veya SRT altyazı dosyası olarak indirebilirsiniz. |
+### 3. Yüksek Kaliteli Medya İndirme (FFmpeg)
+* **Format Seçenekleri:** Görüntü ve sesin en yüksek kalitede birleştirildiği MP4 formatı veya sadece ses odaklı yüksek kaliteli MP3 formatı seçilebilir.
+* **Arka Plan Görev Sistemi (Task Polling):** Dev boyutlu dosyalar indirilirken tarayıcı bağlantısı kopmaz (Timeout koruması). İndirme işlemi asenkron olarak çalışır ve kullanıcıya arayüzde ilerleme durumu (örneğin: %45) canlı olarak gösterilir.
+* **Sayfa Korumalı İndirme:** İndirme işlemi görünmez bir "iframe" üzerinden tetiklenerek olası ağ hatalarında uygulamanın beyaz sayfaya düşmesi engellenir.
+
+### 4. Arayüz ve Kullanıcı Deneyimi
+* **Karanlık / Aydınlık Tema Geçişi:** Menü üzerinden tek tıkla anında tema değiştirilebilir, seçiminiz tarayıcı önbelleğine kaydedilir.
+* **Klavye Kısayolları:** Tarayıcıda başka bir yere tıklamış olsanız dahi `Space` (Boşluk) tuşu ile videoyu durdurup başlatabilir, `Sağ/Sol Yön Tuşları` ile 5 saniye ileri veya geri sarabilirsiniz.
+* **Yerel Veritabanı:** Kaydedilen videolar tarayıcının geçici hafızasında değil, arka planda çalışan güvenli bir JSON dosyasında tutulur. Başka cihazlara taşımak için içe/dışa aktarma (Import/Export) desteği mevcuttur.
 
 ---
 
-## Hızlı Başlangıç (Tek Komut)
+## 🔮 Gelecek Planları (Neler Yapılacak?)
 
-### Gereksinimler
+Uygulamayı bir sonraki seviyeye taşımak için planlanan V2.0 hedefleri aşağıda listelenmiştir:
 
-TubiScribe, Linux sistemlerde (Ubuntu, Debian, Linux Mint, Fedora, Arch, vb.) eksik bağımlılıkları otomatik algılar ve kurar. Paket yöneticisi (apt, dnf, pacman, zypper) otomatik tanınır.
+* **Liste İndirme:** Oynatma listelerinin (playlist) içerisindeki videoların toplu olarak seçilip indirilmesi.
+* **Shorts Video Entegrasyonu:** YouTube Shorts linklerinin ve formatlarının sisteme tam uyumlu hale getirilmesi.
+* **Ana Menü Algoritması:** Uygulama açılış ekranında rastgele veya izleme geçmişine dayalı önerilen videoların sunulması.
+* **Arama Çubuğu Önerileri:** Kullanıcı yazı yazarken otomatik tamamlama ve YouTube arama önerilerinin listelenmesi.
+* **Çoklu Transkript Karşılaştırma (Çift Dilli Okuma Modu):** Dil öğrenenler için orijinal transkript ve çevirinin yan yana iki sütun halinde senkronize olarak gösterilmesi.
+* **Yapay Zeka (AI) Video Özeti:** Uygulama içi yerleşik bir yapay zeka entegrasyonu ile uzun videoların transkriptinin analiz edilip saniyeler içinde madde madde özetlenmesi.
+* **Kaldığın Yerden Devam Et (Akıllı Hafıza):** Kaydedilen bir videonun en son kaçıncı saniyede kapatıldığının hatırlanması ve tekrar açıldığında kaldığı yerden başlaması.
+* **PDF veya Markdown Dışa Aktarma:** Transkriptlerin düz metin (TXT) yerine; video kapağı, başlıklar ve tıklanabilir zaman damgalarını barındıran şık doküman formatlarında indirilmesi.
+* **PWA Desteği:** Uygulamanın bir masaüstü yazılımı gibi bilgisayara yüklenebilmesi ve çevrimdışı önbellek desteği.
+* **Docker Compose Dağıtımı:** Tüm sistemin (frontend, backend, veritabanı) tek bir komutla herhangi bir sunucuya anında kurulabilmesi.
 
-Kurulan temel araçlar:
-* Python 3.10+ ve python3-venv
-* Node.js ve npm
-* FFmpeg (Video ve Ses birleştirme işlemleri için)
-* curl
+---
 
-### Kurulum ve Çalıştırma
+## 📁 Dosya Yapısı
+
+Proje, bağımsız çalışan ancak birbiriyle iletişimde olan Frontend (React) ve Backend (FastAPI) mimarilerinden oluşmaktadır.
+
+```text
+TubeScribe/
+├── backend/
+│   ├── main.py                # FastAPI ana sunucusu, görev yönetimi ve API rotaları
+│   ├── schemas.py             # Pydantic veri modelleri ve doğrulama şemaları
+│   ├── requirements.txt       # Python kütüphane bağımlılıkları
+│   ├── venv/                  # Python sanal ortamı (otomatik oluşturulur)
+│   └── saved/                 # Kullanıcıya ait yerel JSON veritabanı klasörü
+├── frontend/
+│   ├── src/
+│   │   ├── components/        # React arayüz bileşenleri (Navbar, Sidebar, VideoArea vb.)
+│   │   ├── App.jsx            # Ana React uygulama bileşeni ve global durum yönetimi
+│   │   ├── main.jsx           # React DOM render ve başlatma noktası
+│   │   └── index.css          # Tailwind CSS v4 ayarları ve karanlık tema varyantları
+│   ├── package.json           # Node.js bağımlılıkları ve npm komutları
+│   └── vite.config.js         # Vite derleyici ayarları
+├── docs/                      # Dökümantasyon ve ekran görüntüleri
+│   ├── BACKEND_README.md      # Backend mimarisi ve API detayları
+│   └── FRONTEND_README.md     # React arayüzü ve bileşen detayları
+├── start.sh                   # Tüm sistemi kuran ve başlatan otomatik Linux betiği
+├── OPTIMIZATIONS.md           # Sistem için hazırlanan detaylı performans/güvenlik raporu
+└── README.md                  # Proje ana dökümantasyonu
+```
+
+> **Not:** Arka plan (Backend) ve ön yüz (Frontend) mimarilerinin kendi iç dinamikleri, API uç noktaları, manuel cURL testleri ve React yapıları hakkında çok daha detaylı teknik bilgi almak için lütfen [docs/BACKEND_README.md](docs/BACKEND_README.md) ve [docs/FRONTEND_README.md](docs/FRONTEND_README.md) dosyalarını inceleyin.
+
+---
+
+## ⚙️ Kurulum ve Çalıştırma
+
+Uygulamayı çalıştırmak için bilgisayarınızda **Python 3.12+**, **Node.js** ve **FFmpeg** yüklü olmalıdır. Bunu iki farklı yöntemle yapabilirsiniz:
+
+### Yöntem 1: Otomatik Çalıştırma (Önerilen - Sadece Linux)
+
+Linux tabanlı bir dağıtım (Ubuntu, Debian, Fedora, Arch, openSUSE) kullanıyorsanız sistemdeki eksik gereksinimleri otomatik kuran betiği kullanabilirsiniz:
 
 ```bash
-# 1. Projeyi klonla
-git clone https://github.com/KULLANICI/TubiScribe.git
+# Betiğe çalışma izni verin
+chmod +x start.sh
 
-# 2. Proje dizinine gir
-cd TubiScribe
-
-# 3. Tek komutla kur ve çalıştır
+# Uygulamayı başlatın
 ./start.sh
 ```
 
-### start.sh Ne Yapar?
-1. Sistem bağımlılıklarını kontrol eder, eksikse paket yöneticisi ile otomatik kurar.
-2. Python sanal ortamı (venv) oluşturur ve kilitli dizinler üzerinden paketleri indirir.
-3. Frontend bağımlılıklarını (Node modules) kurar.
-4. Backend (Port 8000) ve Frontend (Port 5173) servislerini başlatır.
+Bu komut Python sanal ortamını yaratır, kütüphaneleri indirir, npm paketlerini kurar ve hem arka planı hem de ön yüzü aynı anda başlatarak tarayıcınızda açar.
 
----
+### Yöntem 2: Manuel Kurulum ve Çalıştırma (Tüm İşletim Sistemleri)
 
-## Manuel Kurulum
+Eğer Windows/macOS kullanıyorsanız veya sistemleri ayrı terminallerde geliştirme modunda çalıştırmak istiyorsanız aşağıdaki adımları izleyin:
 
-Otomatik kurulum kullanmak istemiyorsanız:
-
-### Backend
+#### 1. Arka Planı (Backend) Başlatmak
+Yeni bir terminal açın ve sırasıyla şu komutları girin:
 ```bash
 cd backend
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate      # Windows için: venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn main:app --reload --port 8000
 ```
 
-### Frontend
+#### 2. Ön Yüzü (Frontend) Başlatmak
+İkinci bir terminal açın ve sırasıyla şu komutları girin:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
----
-
-## Kullanım Rehberi
-
-### Video Arama ve Oynatma
-1. Arama çubuğuna kelime veya playlist linki yazın ve aratın.
-2. Sağ paneldeki "Sıradakiler" sekmesinden videoyu seçerek oynatın.
-3. Videoyu kaydetmek için alt kısımdaki "Kaydet" butonunu kullanın. Kayıtlarınız "Kaydedilenler" sekmesinde yer alacaktır.
-
-### Video ve Ses İndirme
-1. Oynatılan videonun altındaki "İndir" butonuna tıklayın.
-2. Desteklenen çözünürlükler (1080p, 720p vb.) ve tahmini dosya boyutları listelenecektir.
-3. İndirmek istediğiniz formata (Video veya MP3) tıklayın.
-4. Sunucu dosyayı hazırlayana kadar bekleyin, ardından tarayıcı indirme işlemini başlatacaktır.
+Terminalde beliren adrese (genellikle `http://localhost:5173`) tıklayarak uygulamayı kullanmaya başlayabilirsiniz.
 
 ---
 
-## Proje Mimarisi
+## 📝 Kullanılan Teknolojiler
 
-```
-TubiScribe/
-├── start.sh                        (Otomatik kurulum ve başlatma)
-├── backend/                        (Python FastAPI)
-│   ├── main.py                     (API Uç Noktaları ve İndirme Motoru)
-│   ├── schemas.py                  (Veri Modelleri)
-│   ├── requirements.txt            (Bağımlılıklar)
-│   └── saved/                      (JSON Veritabanı Klasörü)
-└── frontend/                       (React + Vite)
-    ├── vite.config.js              (Sunucu Ayarları)
-    └── src/                        (Arayüz Bileşenleri)
-```
+* **Geliştirme Çatısı:** React + Vite
+* **Tasarım Sistemi:** Tailwind CSS v4 + Lucide React İkonları
+* **Sunucu Mimarisi:** FastAPI (Python)
+* **Video Veri Çıkarımı:** yt-dlp, youtube-transcript-api
+* **Medya İşleme:** FFmpeg
+* **Asenkron İletişim:** Axios
 
 ---
 
-## API Referansı
+## 📄 Lisans
 
-Backend http://localhost:8000 adresinde çalışır. Dokümantasyon: http://localhost:8000/docs
-
-| Endpoint | Metot | Açıklama |
-|---|---|---|
-| /api/search | GET | YouTube üzerinde arama yapar. |
-| /api/playlist | GET | Playlist URL'sini ayrıştırıp listeler. |
-| /api/transcript/{video_id} | GET | Videonun transkript verisini çeker, opsiyonel çeviri yapar. |
-| /api/formats/{video_id} | GET | İndirilebilir video/ses çözünürlüklerini ve boyutlarını listeler. |
-| /api/download/{video_id} | GET | Belirtilen formatı arka planda birleştirip tarayıcıya stream eder. |
-| /api/saved | GET / POST | Kaydedilen videolar listesini okur veya yeni video ekler. |
-| /api/saved/{video_id} | DELETE | Listeden video çıkartır. |
-| /api/saved/sync | PUT | Dışa aktarılmış JSON dosyasındaki listeyi mevcut veritabanına entegre eder. |
-
----
-
-## Teknoloji Yığını
-
-### Backend
-* Python 3.10+
-* FastAPI & Uvicorn
-* yt-dlp (Veri çekme ve indirme işlemleri)
-* youtube-transcript-api (Altyazı sistemi)
-* FFmpeg (Görüntü ve ses birleştirme)
-
-### Frontend
-* React 19
-* Vite
-* Tailwind CSS 4
-* Axios
-* react-youtube
-
----
-
-## Sorun Giderme
-
-* localhost:5173 Bağlantı Reddedildi: Vite dev sunucusunun host ayarı 0.0.0.0 yapılmalıdır (varsayılan olarak eklidir).
-* Pip / Uvicorn Bulunamadı Hatası: start.sh kilitli venv yollarını kullandığı için bu hata yeni versiyonda tamamen giderilmiştir. Çalışmazsa python3-venv paketinin tam kurulu olduğundan emin olun.
-* Çeviri Başarısız: YouTube bazı otomatik oluşturulmuş dillerin çapraz çevirisine izin vermeyebilir. Sistem artık çökmeden bu durumu tespit edip uyarı vermektedir.
-* Sesli Video İnmiyor: Yüksek kaliteli videolar için sisteminizde FFmpeg kurulu olmalıdır. start.sh bunu otomatik sağlar.
-
----
-
-## Güvenlik ve Gizlilik
-
-* Kişisel Veriler: Hiçbir kullanıcı verisi veya izleme (telemetri) kodu içermez.
-* API Bağımsızlığı: Uygulama resmi YouTube Data API'sini kullanmaz, bu nedenle kota sınırı yoktur.
-* Veri Depolama: Kaydedilen veriler sadece kendi cihazınızda (saved/ klasörü) tutulur, herhangi bir uzak sunucuya gönderilmez.
+Bu proje açık kaynaklıdır ve MIT Lisansı (veya sizin belirleyeceğiniz bir lisans) altında özgürce kullanılabilir, geliştirilebilir ve dağıtılabilir. Katkıda bulunmak için depoyu çatallayabilir (fork) ve çekme istekleri (pull request) gönderebilirsiniz.
