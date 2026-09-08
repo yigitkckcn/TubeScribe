@@ -10,6 +10,7 @@ TubiScribe, YouTube videolarını reklamsız, izleyicisiz (tracker-free) ve tama
 * ![Aydınlık Tema](docs/screenshots/LightMode.png)
 * ![Transkript Örneği](docs/screenshots/TrasnkriptExample.png)
 * ![Video İndirme](docs/screenshots/Video%20İndirme.png)
+* ![Kaydedilenler](docs/screenshots/Saved.png)
 
 ---
 
