@@ -38,7 +38,7 @@ app = FastAPI(title="TubiScribe API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -148,6 +148,9 @@ async def search_videos(q: str = Query(..., min_length=1, description="Arama ter
 
 @app.get("/api/playlist", response_model=PlaylistResponse)
 async def get_playlist(url: str = Query(..., description="YouTube playlist URL'si")):
+    if "youtube.com" not in url and "youtu.be" not in url:
+        raise HTTPException(status_code=400, detail="Geçersiz YouTube URL'si")
+
     ydl_opts = {"quiet": True, "skip_download": True, "extract_flat": True}
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:

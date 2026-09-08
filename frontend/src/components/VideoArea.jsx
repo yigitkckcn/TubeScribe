@@ -23,6 +23,7 @@ export default function VideoArea({
   const opts = {
     width: '100%',
     height: '100%',
+    host: 'https://www.youtube-nocookie.com',
     playerVars: {
       autoplay: 1,
       modestbranding: 1,
