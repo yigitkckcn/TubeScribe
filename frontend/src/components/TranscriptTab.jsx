@@ -1,5 +1,6 @@
 import {
   AlignLeft,
+  Columns,
   ChevronDown,
   ChevronUp,
   Download,
@@ -60,6 +61,8 @@ export default function TranscriptTab({
   translateTo,
   onLangChange,
   onTranslateChange,
+  isDualMode,
+  onDualModeChange,
   onSeek,
   currentVideoTime,
 }) {
@@ -106,7 +109,9 @@ export default function TranscriptTab({
     const query = searchQuery.toLowerCase()
     const indices = []
     transcript.forEach((line, idx) => {
-      if (line.text.toLowerCase().includes(query)) {
+      const orig = line.text?.toLowerCase() || ''
+      const trans = line.translatedText?.toLowerCase() || ''
+      if (orig.includes(query) || trans.includes(query)) {
         indices.push(idx)
       }
     })
@@ -286,9 +291,28 @@ export default function TranscriptTab({
           </select>
         </div>
 
-        {/* Görünüm modu, Arama ve Export */}
+        {/* Görünüm modu, Çift Dil, Arama ve Export */}
         {transcript.length > 0 && (
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center flex-wrap">
+            {/* Çift Dil Toggle */}
+            {translateTo && (
+              <button
+                onClick={() => {
+                  onDualModeChange(!isDualMode)
+                  if (!isDualMode) setViewMode('list') // Çift dilde paragraf mantıksız olur
+                }}
+                title={isDualMode ? "Tekli Moda Geç" : "Çift Dilli Okuma Modu"}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer text-xs font-medium ${
+                  isDualMode
+                    ? 'bg-blue-600 border-blue-500 text-white'
+                    : 'bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
+                }`}
+              >
+                <Columns size={14} />
+                <span className="hidden sm:inline">Çift Dil</span>
+              </button>
+            )}
+
             {/* Görünüm toggle */}
             <div className="flex bg-zinc-200 dark:bg-zinc-800 rounded-lg border border-zinc-300 dark:border-zinc-700 overflow-hidden shrink-0">
               <button
@@ -303,12 +327,15 @@ export default function TranscriptTab({
                 <List size={14} />
               </button>
               <button
-                onClick={() => setViewMode('paragraph')}
-                title="Paragraf Görünümü"
-                className={`px-2.5 py-1.5 transition-colors cursor-pointer ${
-                  viewMode === 'paragraph'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-zinc-400 hover:text-zinc-200'
+                onClick={() => !isDualMode && setViewMode('paragraph')}
+                disabled={isDualMode}
+                title={isDualMode ? "Çift dilli modda paragraf görünümü kullanılamaz" : "Paragraf Görünümü"}
+                className={`px-2.5 py-1.5 transition-colors ${
+                  isDualMode 
+                    ? 'text-zinc-500 opacity-50 cursor-not-allowed'
+                    : viewMode === 'paragraph'
+                      ? 'bg-blue-600 text-white cursor-pointer'
+                      : 'text-zinc-400 hover:text-zinc-200 cursor-pointer'
                 }`}
               >
                 <AlignLeft size={14} />
@@ -448,13 +475,28 @@ export default function TranscriptTab({
                 >
                   {formatTimeShort(line.start)}
                 </span>
-                <span
-                  className={`text-sm leading-relaxed ${
-                    active ? 'text-blue-300' : 'text-zinc-300'
-                  }`}
-                >
-                  {renderHighlightedText(line.text, index)}
-                </span>
+                {isDualMode && translateTo ? (
+                  <div className="flex w-full gap-3">
+                    <div className="flex-1 border-r border-zinc-300 dark:border-zinc-700 pr-3">
+                       <span className={`text-sm leading-relaxed ${active ? 'text-blue-300' : 'text-zinc-400'}`}>
+                         {renderHighlightedText(line.text, index)}
+                       </span>
+                    </div>
+                    <div className="flex-1 pl-1">
+                       <span className={`text-sm leading-relaxed font-medium ${active ? 'text-blue-400' : 'text-zinc-200'}`}>
+                         {renderHighlightedText(line.translatedText || '', index)}
+                       </span>
+                    </div>
+                  </div>
+                ) : (
+                  <span
+                    className={`text-sm leading-relaxed ${
+                      active ? 'text-blue-300' : 'text-zinc-300'
+                    }`}
+                  >
+                    {renderHighlightedText(line.text, index)}
+                  </span>
+                )}
               </div>
             )
           })}

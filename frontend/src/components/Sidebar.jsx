@@ -22,6 +22,8 @@ export default function Sidebar({
   translateTo,
   onLangChange,
   onTranslateChange,
+  isDualMode,
+  onDualModeChange,
   onSeek,
   currentVideoTime,
   activeTab,
@@ -75,6 +77,8 @@ export default function Sidebar({
             translateTo={translateTo}
             onLangChange={onLangChange}
             onTranslateChange={onTranslateChange}
+            isDualMode={isDualMode}
+            onDualModeChange={onDualModeChange}
             onSeek={onSeek}
             currentVideoTime={currentVideoTime}
           />

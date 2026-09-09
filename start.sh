@@ -112,7 +112,7 @@ echo -e "${CYAN}[4/4]${NC} Servisler ayağa kaldırılıyor..."
 echo ""
 
 # Backend'i doğrudan venv içindeki uvicorn binary'si ile başlatıyoruz (Böylece global komut çakışmaları önlenir)
-"$VENV_UVICORN" main:app --host 0.0.0.0 --port 8000 --app-dir "$BACKEND_DIR" &
+"$VENV_UVICORN" main:app --host 0.0.0.0 --port 8000 --app-dir "$BACKEND_DIR" --reload &
 BACKEND_PID=$!
 
 # Frontend'i başlat

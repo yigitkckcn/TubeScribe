@@ -70,25 +70,7 @@ def _get_cached_transcript_lines(video_id: str, lang: str, translate_to: str = N
         except StopIteration:
             raise ValueError("Hiçbir transkript mevcut değil.")
 
-    if translate_to and translate_to != transcript.language_code:
-        source = transcript
-        if not source.is_translatable:
-            source = None
-            for t in transcript_list:
-                if t.is_translatable:
-                    source = t
-                    break
-            if source is None:
-                raise ValueError("Bu video için çevrilebilir transkript bulunamadı.")
-        
-        try:
-            transcript = source.translate(translate_to)
-        except (NotTranslatable, TranslationLanguageNotAvailable):
-            raise ValueError("Bu dil için çeviri desteklenmiyor. Lütfen başka bir dil seçin.")
-
     fetched = transcript.fetch()
-    # Snippet object is not subscriptable, it uses dot notation (.text, .start, .duration)
-    # in newer/some versions of youtube-transcript-api. We must use attributes or dict mapping.
     
     # Güvenlik amaçlı: Eğer obje ise dot notation, sözlük ise dictionary erişimi
     lines = []
@@ -97,7 +79,56 @@ def _get_cached_transcript_lines(video_id: str, lang: str, translate_to: str = N
             lines.append(TranscriptLine(text=s["text"], start=s["start"], duration=s["duration"]))
         else:
             lines.append(TranscriptLine(text=s.text, start=s.start, duration=s.duration))
+
+    # IP Ban'ı aşmak için yerleşik API yerine deep-translator kullanıyoruz
+    if translate_to and translate_to != transcript.language_code:
+        try:
+            from deep_translator import GoogleTranslator
+            from concurrent.futures import ThreadPoolExecutor
             
+            chunk_size = 4500
+            chunks = []
+            current_chunk = []
+            current_len = 0
+
+            # Güvenli çeviri için metinleri temizle ve parçalara böl (Google 5000 char limit)
+            for line in lines:
+                clean_text = line.text.replace("\n", " ").strip()
+                if not clean_text:
+                    clean_text = " "
+                
+                if current_len + len(clean_text) > chunk_size and current_chunk:
+                    chunks.append("\n".join(current_chunk))
+                    current_chunk = []
+                    current_len = 0
+                
+                current_chunk.append(clean_text)
+                current_len += len(clean_text) + 1
+
+            if current_chunk:
+                chunks.append("\n".join(current_chunk))
+
+            # Thread pool ile paralel (eşzamanlı) çeviri yaparak 10x hızlandırma
+            def _translate_chunk(text_str):
+                # Her thread için ayrı instance (güvenli)
+                translator = GoogleTranslator(source='auto', target=translate_to)
+                res = translator.translate(text_str)
+                return res.split("\n") if res else []
+
+            translated_lines = []
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                results = list(executor.map(_translate_chunk, chunks))
+
+            for r in results:
+                translated_lines.extend(r)
+            
+            # Sonuçları eşleştir
+            for i, line in enumerate(lines):
+                if i < len(translated_lines):
+                    line.text = translated_lines[i].strip()
+        except Exception as e:
+            raise ValueError(f"Çeviri işlemi başarısız oldu (Google Translate API): {str(e)}")
+
     return fetched, lines
 
 

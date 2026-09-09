@@ -17,6 +17,7 @@ export default function App() {
   const [availableLangs, setAvailableLangs] = useState([])
   const [selectedLang, setSelectedLang] = useState('')
   const [translateTo, setTranslateTo] = useState('')
+  const [isDualMode, setIsDualMode] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [transcriptLoading, setTranscriptLoading] = useState(false)
   const [transcriptError, setTranscriptError] = useState('')
@@ -269,22 +270,47 @@ export default function App() {
     }
   }
 
-  async function fetchTranscript(videoId, lang, translateTarget) {
+  async function fetchTranscript(videoId, lang, translateTarget, dualMode = isDualMode) {
     setTranscriptLoading(true)
     setTranscriptError('')
     try {
-      const params = { lang }
-      if (translateTarget) params.translate_to = translateTarget
-      const { data } = await axios.get(`${API}/transcript/${videoId}`, { params })
-      setTranscript(data.transcript || [])
+      if (dualMode && translateTarget) {
+        // Çift dilli mod: Hem orijinali hem çeviriyi çekip birleştir
+        const [origRes, transRes] = await Promise.all([
+          axios.get(`${API}/transcript/${videoId}`, { params: { lang } }),
+          axios.get(`${API}/transcript/${videoId}`, { params: { lang, translate_to: translateTarget } })
+        ])
+        
+        const origList = origRes.data.transcript || []
+        const transList = transRes.data.transcript || []
+        
+        // Zaman damgalarına göre eşleştir
+        const merged = origList.map((item, i) => ({
+          ...item,
+          text: item.text, // Orijinal metin
+          translatedText: transList[i] ? transList[i].text : '' // Çevrilmiş metin
+        }))
+        setTranscript(merged)
+      } else {
+        // Standart tekil mod
+        const params = { lang }
+        if (translateTarget) params.translate_to = translateTarget
+        const { data } = await axios.get(`${API}/transcript/${videoId}`, { params })
+        setTranscript(data.transcript || [])
+      }
     } catch (err) {
       console.error('Transkript hatası:', err)
       setTranscript([])
       const detail = err.response?.data?.detail
-      if (detail && detail.includes('çeviri desteklenmiyor')) {
-        setTranscriptError('Bu dil için çeviri desteklenmiyor.')
-      } else if (detail && detail.includes('çevrilebilir')) {
-        setTranscriptError('Bu video için çevrilebilir transkript bulunamadı.')
+      if (detail) {
+        if (detail.includes('çeviri desteklenmiyor')) {
+          setTranscriptError('Bu dil için çeviri desteklenmiyor.')
+        } else if (detail.includes('çevrilebilir')) {
+          setTranscriptError('Bu video için çevrilebilir transkript bulunamadı.')
+        } else {
+          // Backend'den gelen asıl hata mesajını göster
+          setTranscriptError(detail)
+        }
       } else {
         setTranscriptError('Transkript alınamadı.')
       }
@@ -295,12 +321,17 @@ export default function App() {
 
   function handleLangChange(lang) {
     setSelectedLang(lang)
-    if (currentVideoId) fetchTranscript(currentVideoId, lang, translateTo)
+    if (currentVideoId) fetchTranscript(currentVideoId, lang, translateTo, isDualMode)
   }
 
   function handleTranslateChange(target) {
     setTranslateTo(target)
-    if (currentVideoId) fetchTranscript(currentVideoId, selectedLang, target)
+    if (currentVideoId) fetchTranscript(currentVideoId, selectedLang, target, isDualMode)
+  }
+
+  function handleDualModeChange(checked) {
+    setIsDualMode(checked)
+    if (currentVideoId) fetchTranscript(currentVideoId, selectedLang, translateTo, checked)
   }
 
   return (
@@ -341,6 +372,8 @@ export default function App() {
             translateTo={translateTo}
             onLangChange={handleLangChange}
             onTranslateChange={handleTranslateChange}
+            isDualMode={isDualMode}
+            onDualModeChange={handleDualModeChange}
             onSeek={handleSeek}
             currentVideoTime={currentVideoTime}
             activeTab={activeTab}
