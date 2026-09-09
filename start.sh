@@ -17,7 +17,7 @@ NC='\033[0m'
 
 echo -e "${CYAN}"
 echo "  ╔════════════════════════════════════╗"
-echo "  ║         TubiScribe v1.0            ║"
+echo "  ║         TubiScribe v2.0            ║"
 echo "  ║   YouTube Transkript Motoru        ║"
 echo "  ╚════════════════════════════════════╝"
 echo -e "${NC}"
