@@ -195,8 +195,8 @@ def _entry_to_video(entry: dict) -> VideoResult:
     video_id = entry.get("id", "")
     return VideoResult(
         id=video_id,
-        title=entry.get("title", "Başlık Yok"),
-        channel=entry.get("uploader", entry.get("channel", "Bilinmeyen Kanal")),
+        title=entry.get("title") or "Gizli/Silinmiş Video",
+        channel=entry.get("uploader") or entry.get("channel") or "Bilinmeyen Kanal",
         duration=_format_duration(entry.get("duration")),
         thumbnail=entry.get("thumbnail") or _build_thumbnail(video_id),
     )
@@ -217,11 +217,19 @@ def search_videos(q: str = Query(..., min_length=1, description="Arama terimi"))
     # Sayfalama yerine arama limitini 15'ten 40'a çıkarttık.
     ydl_opts = {"quiet": True, "skip_download": True, "extract_flat": True}
     try:
+        query_str = q
+        if not (q.startswith("http://") or q.startswith("https://")):
+            query_str = f"ytsearch40:{q}"
+            
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            result = ydl.extract_info(f"ytsearch40:{q}", download=False)
+            result = ydl.extract_info(query_str, download=False)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Arama sırasında hata: {exc}")
-    entries = result.get("entries") or []
+    
+    entries = result.get("entries")
+    if entries is None:
+        entries = [result]
+        
     videos = [_entry_to_video(e) for e in entries if e]
     return SearchResponse(results=videos)
 
@@ -243,8 +251,8 @@ def get_playlist(url: str = Query(..., description="YouTube playlist URL'si")):
     entries = result.get("entries") or []
     videos = [_entry_to_video(e) for e in entries if e]
     return PlaylistResponse(
-        title=result.get("title", "Bilinmeyen Playlist"),
-        channel=result.get("uploader", result.get("channel", "Bilinmeyen Kanal")),
+        title=result.get("title") or "Bilinmeyen Playlist",
+        channel=result.get("uploader") or result.get("channel") or "Bilinmeyen Kanal",
         videos=videos,
     )
 
