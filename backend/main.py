@@ -22,12 +22,14 @@ from youtube_transcript_api import (
 )
 
 from schemas import (
+    AppSettings,
     FormatInfo,
     FormatsResponse,
     LanguageModel,
     PlaylistResponse,
     SavedSyncRequest,
     SavedVideo,
+    SummaryRequest,
     SearchResponse,
     SubtitlesResponse,
     TranscriptLine,
@@ -84,9 +86,8 @@ def _get_cached_transcript_lines(video_id: str, lang: str, translate_to: str = N
     if translate_to and translate_to != transcript.language_code:
         try:
             from deep_translator import GoogleTranslator
-            from concurrent.futures import ThreadPoolExecutor
             
-            chunk_size = 4500
+            chunk_size = 4000
             chunks = []
             current_chunk = []
             current_len = 0
@@ -108,20 +109,14 @@ def _get_cached_transcript_lines(video_id: str, lang: str, translate_to: str = N
             if current_chunk:
                 chunks.append("\n".join(current_chunk))
 
-            # Thread pool ile paralel (eşzamanlı) çeviri yaparak 10x hızlandırma
-            def _translate_chunk(text_str):
-                # Her thread için ayrı instance (güvenli)
-                translator = GoogleTranslator(source='auto', target=translate_to)
-                res = translator.translate(text_str)
-                return res.split("\n") if res else []
-
+            # Thread havuzu yerine sırayla çeviri yapıyoruz (Google 500 / Too Many Requests hatasını önlemek için)
             translated_lines = []
-            with ThreadPoolExecutor(max_workers=10) as executor:
-                results = list(executor.map(_translate_chunk, chunks))
+            translator = GoogleTranslator(source='auto', target=translate_to)
+            for chunk_str in chunks:
+                res = translator.translate(chunk_str)
+                if res:
+                    translated_lines.extend(res.split("\n"))
 
-            for r in results:
-                translated_lines.extend(r)
-            
             # Sonuçları eşleştir
             for i, line in enumerate(lines):
                 if i < len(translated_lines):
@@ -135,6 +130,7 @@ def _get_cached_transcript_lines(video_id: str, lang: str, translate_to: str = N
 # ──────────────────────────── KAYDEDİLENLER VERİTABANI ─────────────────────────
 SAVED_DIR = Path("saved")
 SAVED_FILE = SAVED_DIR / "saved_videos.json"
+SETTINGS_FILE = SAVED_DIR / "settings.json"
 
 def _load_saved() -> list:
     if not SAVED_FILE.exists():
@@ -149,6 +145,37 @@ def _save_saved(data: list):
     SAVED_DIR.mkdir(exist_ok=True)
     with open(SAVED_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
+def _load_settings() -> dict:
+    default_settings = {
+        "ai_provider": "gemini",
+        "ai_api_key": "",
+        "smart_memory": True,
+        "theme": "dark"
+    }
+    if not SETTINGS_FILE.exists():
+        return default_settings
+    try:
+        with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+            loaded = json.load(f)
+            return {**default_settings, **loaded}
+    except Exception:
+        return default_settings
+
+def _save_settings(settings: dict):
+    SAVED_DIR.mkdir(exist_ok=True)
+    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump(settings, f, ensure_ascii=False, indent=2)
+
+@app.get("/api/settings", response_model=AppSettings)
+def get_settings():
+    return _load_settings()
+
+@app.post("/api/settings", response_model=AppSettings)
+def update_settings(settings: AppSettings):
+    data = settings.model_dump()
+    _save_settings(data)
+    return data
 
 @app.get("/api/saved", response_model=List[SavedVideo])
 def get_saved_videos():
@@ -483,3 +510,68 @@ def get_download_file(task_id: str):
         background=BackgroundTask(cleanup),
         headers=headers
     )
+
+# ──────────────────────────── 8. AI SUMMARY ─────────────────────────
+@app.post("/api/summarize")
+def summarize_transcript(req: SummaryRequest):
+    if not req.api_key:
+        raise HTTPException(status_code=400, detail="API anahtarı eksik. Lütfen Ayarlar sekmesinden API anahtarınızı girin.")
+    
+    prompt = (
+        "Sen uzman bir asistansın. Aşağıdaki YouTube videosu transkriptini incele ve videonun ana hatlarını, "
+        "en önemli noktalarını madde madde, Türkçe olarak özetle. Yanıtında Markdown (kalın, liste vb.) kullanabilirsin.\n\n"
+        f"Transkript:\n{req.transcript[:30000]}" # Avoid token limits for extremely long videos
+    )
+    
+    try:
+        if req.provider == "gemini":
+            from google import genai
+            client = genai.Client(api_key=req.api_key)
+            
+            # 2026 versiyonlu güncel modelleri direkt deneyerek fallback yapıyoruz.
+            models_to_try = [
+                "gemini-3.6-flash",
+                "gemini-3.5-flash",
+                "gemini-3.0-flash",
+                "gemini-pro",
+                "gemma"
+            ]
+            
+            response = None
+            last_err = None
+            
+            for m in models_to_try:
+                try:
+                    # Google GenAI SDK uyarısına istinaden generate_content yerine Chat API kullanıyoruz.
+                    chat = client.chats.create(model=m)
+                    res = chat.send_message(prompt)
+                    
+                    if res and res.text:
+                        response = res
+                        break # Başarılı olduysa çık
+                except Exception as e:
+                    last_err = e
+                    continue # Hata verirse sıradakine geç
+                    
+            if not response:
+                raise ValueError(f"Hiçbir model kullanılamadı. Son hata: {str(last_err)}")
+                
+            return {"summary": response.text}
+            
+        elif req.provider == "openai":
+            import openai
+            client = openai.OpenAI(api_key=req.api_key)
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Sen yardımcı bir asistansın."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            return {"summary": response.choices[0].message.content}
+            
+        else:
+            raise HTTPException(status_code=400, detail="Bilinmeyen AI sağlayıcısı.")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Yapay zeka servisi hata verdi: {str(e)}")

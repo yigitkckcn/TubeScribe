@@ -175,6 +175,22 @@ export default function App() {
   // ── Player hazır ──
   function handlePlayerReady(event) {
     playerRef.current = event.target
+    
+    // Akıllı Hafıza: Eğer bu video için önceden kaydedilmiş bir süre varsa oradan devam et
+    if (currentVideoId) {
+      try {
+        const isSmartMemoryEnabled = localStorage.getItem('setting_smartMemory') !== 'false'
+        if (isSmartMemoryEnabled) {
+          const history = JSON.parse(localStorage.getItem('watchHistory') || '{}')
+          const savedTime = history[currentVideoId]
+          if (savedTime && savedTime > 0) {
+            playerRef.current.seekTo(savedTime, true)
+          }
+        }
+      } catch (e) {
+        console.error("Akıllı hafıza okunamadı:", e)
+      }
+    }
   }
 
   // ── Zaman takibi ──
@@ -182,10 +198,25 @@ export default function App() {
     if (intervalRef.current) clearInterval(intervalRef.current)
     intervalRef.current = setInterval(() => {
       if (playerRef.current) {
-        setCurrentVideoTime(playerRef.current.getCurrentTime())
+        const currentTime = playerRef.current.getCurrentTime()
+        setCurrentVideoTime(currentTime)
+        
+        // Akıllı Hafıza: Son izlenen saniyeyi localStorage'a kaydet (sadece 2 saniyeden fazlaysa)
+        if (currentVideoId && currentTime > 2) {
+          try {
+            const isSmartMemoryEnabled = localStorage.getItem('setting_smartMemory') !== 'false'
+            if (isSmartMemoryEnabled) {
+              const history = JSON.parse(localStorage.getItem('watchHistory') || '{}')
+              history[currentVideoId] = currentTime
+              localStorage.setItem('watchHistory', JSON.stringify(history))
+            }
+          } catch (e) {
+            console.error("Akıllı hafıza kaydedilemedi:", e)
+          }
+        }
       }
-    }, 500)
-  }, [])
+    }, 1000)
+  }, [currentVideoId])
 
   const stopTimeTracking = useCallback(() => {
     if (intervalRef.current) {

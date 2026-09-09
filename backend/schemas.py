@@ -70,3 +70,16 @@ class SavedVideo(BaseModel):
 
 class SavedSyncRequest(BaseModel):
     videos: List[SavedVideo]
+
+
+class SummaryRequest(BaseModel):
+    transcript: str
+    provider: str
+    api_key: str
+
+
+class AppSettings(BaseModel):
+    ai_provider: str = "gemini"
+    ai_api_key: str = ""
+    smart_memory: bool = True
+    theme: str = "dark"

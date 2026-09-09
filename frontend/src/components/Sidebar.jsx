@@ -1,11 +1,13 @@
 import PlaylistTab from './PlaylistTab'
 import SavedTab from './SavedTab'
 import TranscriptTab from './TranscriptTab'
+import SettingsTab from './SettingsTab'
 
 const TABS = [
-  { key: 'playlist', label: 'Sıradakiler' },
+  { key: 'playlist', label: 'Liste' },
   { key: 'transcript', label: 'Transkript' },
   { key: 'saved', label: 'Kaydedilenler' },
+  { key: 'settings', label: 'Ayarlar' },
 ]
 
 export default function Sidebar({
@@ -35,7 +37,7 @@ export default function Sidebar({
   return (
     <div className="flex flex-col h-full bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 overflow-hidden">
       {/* Sekme başlıkları */}
-      <div className="flex shrink-0 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="flex shrink-0 border-b border-zinc-200 dark:border-zinc-800 overflow-x-auto">
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -91,6 +93,9 @@ export default function Sidebar({
             onRemoveSaved={onRemoveSaved}
             onImportSaved={onImportSaved}
           />
+        )}
+        {activeTab === 'settings' && (
+          <SettingsTab />
         )}
       </div>
     </div>

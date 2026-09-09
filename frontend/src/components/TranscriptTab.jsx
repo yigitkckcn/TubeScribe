@@ -9,8 +9,11 @@ import {
   Search,
   Subtitles,
   X,
+  BrainCircuit,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import axios from 'axios'
 
 // ── Global çeviri dilleri — value kesinlikle ISO 639-1 kodu ──
 const TRANSLATE_LANGUAGES = [
@@ -76,10 +79,48 @@ export default function TranscriptTab({
   const [isSearchVisible, setIsSearchVisible] = useState(false)
   const [matchIndices, setMatchIndices] = useState([])
   const [currentMatchIdx, setCurrentMatchIdx] = useState(-1)
+  
+  // ── AI Özet State'leri ──
+  const [summary, setSummary] = useState('')
+  const [isSummarizing, setIsSummarizing] = useState(false)
+  const [summaryError, setSummaryError] = useState('')
+  const [showSummary, setShowSummary] = useState(false)
 
   const activeLineRef = useRef(null)
   const lineRefs = useRef([])
   const searchInputRef = useRef(null)
+
+  const handleSummarize = async () => {
+    const apiKey = localStorage.getItem('aiApiKey')
+    const provider = localStorage.getItem('aiProvider') || 'gemini'
+    
+    if (!apiKey) {
+      alert("Lütfen önce Ayarlar sekmesinden API anahtarınızı (API Key) girin.")
+      return
+    }
+
+    if (!transcript || transcript.length === 0) return
+
+    setShowSummary(true)
+    setIsSummarizing(true)
+    setSummaryError('')
+    
+    // Sadece çevrilmiş (veya orijinal) metinleri birleştir
+    const fullText = transcript.map(t => t.translatedText || t.text).join(' ')
+
+    try {
+      const res = await axios.post('http://localhost:8000/api/summarize', {
+        transcript: fullText,
+        provider: provider,
+        api_key: apiKey
+      })
+      setSummary(res.data.summary)
+    } catch (err) {
+      setSummaryError(err.response?.data?.detail || "Özet oluşturulurken bir hata oluştu.")
+    } finally {
+      setIsSummarizing(false)
+    }
+  }
 
   // ── Ctrl+F Dinleyicisi ──
   useEffect(() => {
@@ -358,6 +399,16 @@ export default function TranscriptTab({
               <Search size={14} />
             </button>
 
+            {/* AI Özetle Butonu */}
+            <button
+              onClick={handleSummarize}
+              title="Yapay Zeka ile Özetle"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg border border-indigo-500 transition-colors cursor-pointer"
+            >
+              <BrainCircuit size={14} />
+              <span className="hidden sm:inline">Özetle</span>
+            </button>
+
             {/* Export butonu */}
             <button
               onClick={() => setShowExportModal(true)}
@@ -446,6 +497,36 @@ export default function TranscriptTab({
         <div className="flex flex-col items-center justify-center flex-1 text-zinc-500 dark:text-zinc-500 gap-2">
           <Subtitles size={32} strokeWidth={1} />
           <p className="text-sm">Transkript görüntülemek için video seçin</p>
+        </div>
+      )}
+
+      {/* ── AI Özet Alanı ── */}
+      {showSummary && (
+        <div className="flex flex-col mx-1 my-1 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl overflow-hidden shrink-0">
+          <div className="flex items-center justify-between px-3 py-2 bg-indigo-100/50 dark:bg-indigo-900/50 border-b border-indigo-200 dark:border-indigo-800">
+            <div className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-400 font-semibold text-sm">
+              <BrainCircuit size={16} />
+              AI Video Özeti
+            </div>
+            <button 
+              onClick={() => setShowSummary(false)}
+              className="text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="p-4 text-sm text-zinc-800 dark:text-zinc-200 overflow-y-auto max-h-80 leading-relaxed [&>h1]:text-lg [&>h1]:font-bold [&>h1]:mb-2 [&>h2]:text-base [&>h2]:font-bold [&>h2]:mb-2 [&>ul]:list-disc [&>ul]:ml-5 [&>ul]:mb-3 [&>ol]:list-decimal [&>ol]:ml-5 [&>ol]:mb-3 [&>li]:mb-1 [&>p]:mb-3 [&>strong]:text-indigo-700 dark:[&>strong]:text-indigo-400">
+            {isSummarizing ? (
+              <div className="flex flex-col items-center justify-center py-4 gap-3 text-indigo-500">
+                <Loader2 size={24} className="animate-spin" />
+                <span className="font-medium">Video analiz ediliyor...</span>
+              </div>
+            ) : summaryError ? (
+              <div className="text-red-500 text-center py-2">{summaryError}</div>
+            ) : (
+              <ReactMarkdown>{summary}</ReactMarkdown>
+            )}
+          </div>
         </div>
       )}
 
