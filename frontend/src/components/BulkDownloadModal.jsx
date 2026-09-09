@@ -137,7 +137,6 @@ export default function BulkDownloadModal({ videos, onClose }) {
                     {formats.map((fmt, idx) => (
                       <option key={idx} value={fmt.format_id}>
                         {fmt.ext.toUpperCase()} - {fmt.resolution !== 'audio only' ? fmt.resolution : 'Sadece Ses'}
-                        {fmt.filesize ? ` (~${(fmt.filesize / 1024 / 1024).toFixed(1)} MB)` : ''}
                       </option>
                     ))}
                   </select>

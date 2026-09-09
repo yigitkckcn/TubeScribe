@@ -29,6 +29,8 @@ export default function App() {
   const playerRef = useRef(null)
   const intervalRef = useRef(null)
 
+
+
   // ── Sayfa ilk açıldığında Backend'den Kaydedilenleri Çek ──
   useEffect(() => {
     fetchSavedVideos()
@@ -106,7 +108,6 @@ export default function App() {
   function resetApp() {
     stopTimeTracking()
     playerRef.current = null
-    setSearchResults([])
     setCurrentVideoId(null)
     setCurrentVideoTitle('')
     setCurrentChannel('')
@@ -115,12 +116,12 @@ export default function App() {
     setAvailableLangs([])
     setSelectedLang('')
     setTranslateTo('')
-    setIsLoading(false)
     setTranscriptLoading(false)
     setTranscriptError('')
     setSearchError('')
     setCurrentVideoTime(0)
     setActiveTab('playlist')
+    setSearchResults([])
   }
 
   // ── Kaydet / Kaldır (Backend'e istek atılır) ──

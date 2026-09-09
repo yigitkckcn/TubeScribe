@@ -238,7 +238,21 @@ def _format_filesize(size: Optional[int]) -> str:
     return f"{size / (1024 * 1024 * 1024):.2f} GB"
 
 
-# ──────────────────────────── 1. ARAMA ────────────────────────────
+import random
+
+# ──────────────────────────── 1. ARAMA VE TRENDLER ────────────────────────────
+@app.get("/api/suggest")
+def get_suggestions(q: str = Query(..., min_length=1)):
+    import requests
+    url = f"http://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q={q}"
+    try:
+        res = requests.get(url, timeout=3)
+        data = res.json()
+        return {"suggestions": data[1]}
+    except Exception:
+        return {"suggestions": []}
+
+
 @app.get("/api/search", response_model=SearchResponse)
 def search_videos(q: str = Query(..., min_length=1, description="Arama terimi")):
     # Sayfalama yerine arama limitini 15'ten 40'a çıkarttık.
@@ -356,7 +370,15 @@ def get_formats(video_id: str):
     formats = []
     for h, f in resolutions.items():
         v_size = f.get("filesize") or f.get("filesize_approx") or 0
-        total_size = v_size + best_audio_size
+        
+        # Eğer formatın içinde zaten ses varsa, tekrar best_audio ekleme
+        # v_size 0 geldiyse (bilinmiyorsa) toplam boyutu 0 bırakarak yanlış MB gösterimini engelle
+        if v_size == 0:
+            total_size = 0
+        elif f.get("acodec") != "none":
+            total_size = v_size
+        else:
+            total_size = v_size + best_audio_size
         size_str = f" ({_format_filesize(total_size)})" if total_size > 0 else ""
         formats.append(
             FormatInfo(
