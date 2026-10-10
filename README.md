@@ -1,8 +1,8 @@
-# TubiScribe v2.0 - Kapsamlı YouTube Transkript ve Video Asistanı
+# TubiScribe
 
-TubiScribe, YouTube üzerindeki eğitici, bilgilendirici veya uzun süreli videoları hızlı bir şekilde okumak, başka dillere anında çevirmek, yapay zeka ile özetlemek ve en yüksek kalitede bilgisayarınıza indirmek için geliştirilmiş modern, tam bağımsız ve asenkron çalışan bir web uygulamasıdır. 
+TubiScribe, YouTube üzerindeki eğitici, bilgilendirici veya uzun süreli videoları hızlı bir şekilde okumak, başka dillere anında çevirmek, yapay zeka ile özetlemek ve en yüksek kalitede bilgisayarınıza indirmek için geliştirilmiş , tam bağımsız ve asenkron çalışan bir web uygulamasıdır. 
 
-Zamanın çok değerli olduğu günümüzde, saatler süren videoları baştan sona izlemek yerine içeriğine saniyeler içinde göz atmanızı, aradığınız kelimeyi nokta atışı bulmanızı ve videoları e-kitap akıcılığında okumanızı sağlar. Sistem tamamen kendi sunucunuzda (localhost) çalışır.
+Zamanın çok değerli olduğu günümüzde, saatler süren videoları baştan sona izlemek yerine içeriğine saniyeler içinde göz atmanızı, aradığınız kelimeyi bulmanızı ve videoları metin halinde okumanızı sağlar. Sistem tamamen kendi sunucunuzda (localhost) çalışır.
 
 ---
 
@@ -33,11 +33,11 @@ Zamanın çok değerli olduğu günümüzde, saatler süren videoları baştan s
 ## Detaylı Özellikler (v2.0 Güncellemeleri)
 
 ### 1. Akıllı Transkript ve Senkronize Okuma
-* Anında Çeviri Motoru: Orijinal dili ne olursa olsun, videoların transkriptleri saniyeler içinde çekilir ve entegre çeviri algoritmaları (deep-translator) kullanılarak istenilen dile tek tıkla çevrilir. Uygulama, Google Translate API sınırlamalarını aşmak için metinleri dinamik olarak parçalara (chunk) böler.
+* Anında Çeviri Motoru: Orijinal dili ne olursa olsun, videoların transkriptleri  çekilir ve entegre çeviri algoritmaları kullanılarak istenilen dile tek tıkla çevrilir. Uygulama, Google Translate API sınırlamalarını aşmak için metinleri dinamik olarak parçalara (chunk) böler.
 * Çift Dilli Okuma Modu (Dual-Language): Dil öğrenenler veya çeviri kıyaslaması yapmak isteyenler için orijinal transkript ile çeviriyi yan yana, iki sütun halinde ve tam senkronize olarak sunar.
 * Senkronize Takip: Video oynatılırken okunan transkript satırı otomatik olarak algılanır, arka planı koyulaşır ve liste otomatik olarak aşağı kayar. Video üzerinde tıklanılan bir kelime doğrudan videoyu o saniyeye sarar.
 * Gelişmiş Arama (Ctrl+F): Transkript içerisinde entegre arama yapılabilir. Aranan kelimeler metin içerisinde sarı renkle vurgulanır ve ok tuşlarıyla sonuçlar arasında hızlıca gezinilebilir.
-* Akıllı Önbellekleme (LRU Cache): Sunucu belleğindeki özel önbellekleme sayesinde, diller arası geçiş yapıldığında veya aynı video tekrar açıldığında YouTube sunucularına yeniden istek atılmaz. Saniyede on binlerce kelime işleme kapasitesiyle bekleme süresi sıfıra indirilir.
+* Akıllı Önbellekleme (LRU Cache): Sunucu belleğindeki özel önbellekleme sayesinde, diller arası geçiş yapıldığında veya aynı video tekrar açıldığında YouTube sunucularına yeniden istek atılmaz.
 
 ### 2. Yapay Zeka (AI) Destekli Video Özeti
 * Akıllı Analiz: Uygulama içi yerleşik yapay zeka entegrasyonu sayesinde, saatler süren videoların transkriptleri okunup analiz edilir ve videonun ana fikri, önemli noktaları saniyeler içinde madde madde özetlenir. Uzun eğitim veya belgesel videolarında saatlerce zaman tasarrufu sağlar.
@@ -71,8 +71,7 @@ TubiScribe, video içeriklerini sadece izlemekle kalmayıp, onu işlemek ve veri
 
 Proje, standart bir medya aracı olmanın ötesinde çok ciddi performans ve gizlilik standartlarına sahiptir:
 
-* Sıfır Veri İhlali (Tam Yerel Çalışma): Uygulama tamamen kendi yerel makinenizde (localhost) ayağa kalkar. İzlediğiniz, kaydettiğiniz veya çevirdiğiniz hiçbir video verisi üçüncü taraf bir bulut sunucusuna gönderilmez. Tüm ayarlarınız ve kayıt geçmişiniz doğrudan bilgisayarınızdaki `saved/` klasöründe yerel olarak barındırılır.
-* İzleyicisiz (Tracker-Free) Oynatıcı: Video oynatıcı (Iframe) modülü standart YouTube bağlantısı yerine `youtube-nocookie.com` altyapısını kullanır. Bu sayede tarayıcınıza izleme çerezleri (tracking cookies) ve hedefli reklam kodları yerleştirilemez; tamamen anonim bir izleme deneyimi sunulur.
+* Sıfır Veri İhlali (Tam Yerel Çalışma): Uygulama tamamen kendi yerel makinenizde (localhost) ayağa kalkar. İzlediğiniz, kaydettiğiniz veya çevirdiğiniz hiçbir video verisi üçüncü taraf bir bulut sunucusuna gönderilmez. Tüm ayarlarınız ve kayıt geçmişiniz doğrudan bilgisayarınızdaki `/downloads` klasöründe yerel olarak barındırılır.
 * Gelişmiş Ağ (Network) Optimizasyonu: Arama çubuğuna yazılan her harfte API sunucularına istek atıp banlanmamak (Rate-Limit) için ön yüzde "Debouncer" algoritması kullanılmıştır. İstekler saniyenin beşte biri oranında geciktirilerek optimize edilir.
 * Akıllı Bellek Yönetimi (LRU Cache): Sunucu tarafında çekilen çeviriler ve transkriptler RAM üzerinde belirli bir kota ile tutulur. Böylece aynı videoya veya dile ikinci kez geçiş yapıldığında, hiçbir ağ isteği atılmaz ve veriler anında (0 ms gecikmeyle) ekrana getirilir.
 
