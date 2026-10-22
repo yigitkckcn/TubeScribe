@@ -6,3 +6,4 @@ pydantic
 deep-translator==1.11.4
 google-genai
 openai
+requests

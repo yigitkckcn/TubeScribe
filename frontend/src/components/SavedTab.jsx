@@ -55,7 +55,7 @@ export default function SavedTab({
           onClick={exportJSON}
           title="Kaydedilenleri Dışa Aktar"
           disabled={!savedVideos || savedVideos.length === 0}
-          className="flex flex-1 items-center justify-center gap-1.5 px-3 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-200 hover:dark:bg-zinc-700 disabled:opacity-50 text-zinc-700 dark:text-zinc-300 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
+          className="flex flex-1 items-center justify-center gap-1.5 px-3 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 disabled:opacity-50 text-zinc-700 dark:text-zinc-300 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
         >
           <Download size={13} />
           Dışa Aktar
@@ -64,7 +64,7 @@ export default function SavedTab({
         <button
           onClick={() => fileInputRef.current?.click()}
           title="Yedeklenmiş Listeyi İçe Aktar"
-          className="flex flex-1 items-center justify-center gap-1.5 px-3 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-200 hover:dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
+          className="flex flex-1 items-center justify-center gap-1.5 px-3 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
         >
           <Upload size={13} />
           İçe Aktar

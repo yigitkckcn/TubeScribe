@@ -84,8 +84,8 @@ if [ ! -d "$VENV_DIR" ]; then
     }
 fi
 
-# Paketlerin (FastAPI, yt-dlp vb.) varlığını kontrol et
-if ! "$VENV_PY" -c "import fastapi, yt_dlp, youtube_transcript_api" 2>/dev/null; then
+# Paketlerin (FastAPI, yt-dlp, requests vb.) varlığını kontrol et
+if ! "$VENV_PY" -c "import fastapi, yt_dlp, youtube_transcript_api, deep_translator, requests" 2>/dev/null; then
     echo -e "  ${YELLOW}→${NC} Python kütüphaneleri indiriliyor..."
     "$VENV_PIP" install -q -r "$BACKEND_DIR/requirements.txt" || {
         echo -e "${RED}✘ Python paketleri kurulamadı!${NC}"

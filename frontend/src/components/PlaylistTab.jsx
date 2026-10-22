@@ -51,7 +51,7 @@ export default function PlaylistTab({
 
   const selectAll = () => {
     if (selectedVideos.size === videos.length) {
-      setSelectedVideos(newSet())
+      setSelectedVideos(new Set())
     } else {
       setSelectedVideos(new Set(videos.map(v => v.id)))
     }

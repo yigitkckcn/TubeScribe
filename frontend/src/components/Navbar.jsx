@@ -2,6 +2,8 @@ import { Loader2, Search, Moon, Sun } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 
+const API = 'http://localhost:8000/api'
+
 export default function Navbar({ onSearch, isLoading, onReset, theme, onToggleTheme }) {
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState([])
@@ -24,7 +26,7 @@ export default function Navbar({ onSearch, isLoading, onReset, theme, onToggleTh
     // Debounce query
     const delayDebounceFn = setTimeout(() => {
       if (query.trim().length > 1) {
-        axios.get(`http://localhost:8000/api/suggest?q=${encodeURIComponent(query)}`)
+        axios.get(`${API}/suggest?q=${encodeURIComponent(query)}`)
           .then(res => {
             setSuggestions(res.data.suggestions || [])
             if (res.data.suggestions?.length > 0) setShowSuggestions(true)

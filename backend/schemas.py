@@ -63,9 +63,9 @@ class FormatsResponse(BaseModel):
 
 class SavedVideo(BaseModel):
     id: str
-    title: str
-    channel: str
-    thumbnail: str
+    title: str = ""
+    channel: str = ""
+    thumbnail: str = ""
 
 
 class SavedSyncRequest(BaseModel):

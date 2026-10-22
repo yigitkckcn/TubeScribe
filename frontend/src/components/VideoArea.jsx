@@ -143,7 +143,7 @@ export default function VideoArea({
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
               isSaved
                 ? 'bg-blue-600/20 border-blue-500/50 text-blue-400 hover:bg-blue-600/30'
-                : 'bg-zinc-200 dark:bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700'
+                : 'bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-700'
             }`}
           >
             {isSaved ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
@@ -152,7 +152,7 @@ export default function VideoArea({
 
           <button
             onClick={openDownloadModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-200 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 hover:dark:bg-zinc-700 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-200 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
           >
             <Download size={14} />
             İndir
@@ -177,7 +177,7 @@ export default function VideoArea({
               </h2>
               <button
                 onClick={() => setShowDownloadModal(false)}
-                className="text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 hover:dark:text-zinc-300 cursor-pointer"
+                className="text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -214,7 +214,7 @@ export default function VideoArea({
                   <button
                     key={f.format_id}
                     onClick={() => handleDownload(f.format_id)}
-                    className="flex items-center justify-between px-3 py-2.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-200 hover:dark:bg-zinc-700 rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer text-left"
+                    className="flex items-center justify-between px-3 py-2.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer text-left"
                   >
                     <span className="text-zinc-800 dark:text-zinc-200 text-sm">{f.label}</span>
                     <Download size={14} className="text-zinc-600 dark:text-zinc-400 shrink-0" />
@@ -232,7 +232,7 @@ export default function VideoArea({
             {/* Kapat */}
             <button
               onClick={() => setShowDownloadModal(false)}
-              className="w-full py-2.5 text-sm bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-200 hover:dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
+              className="w-full py-2.5 text-sm bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
             >
               Kapat
             </button>

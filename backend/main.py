@@ -82,53 +82,72 @@ def _get_cached_transcript_lines(video_id: str, lang: str, translate_to: str = N
         else:
             lines.append(TranscriptLine(text=s.text, start=s.start, duration=s.duration))
 
-    # IP Ban'ı aşmak için yerleşik API yerine deep-translator kullanıyoruz
+    # IP Ban'ı aşmak için öncelikle YouTube yerel çevirisini, yoksa deep-translator kullanıyoruz
     if translate_to and translate_to != transcript.language_code:
-        try:
-            from deep_translator import GoogleTranslator
-            
-            chunk_size = 4000
-            chunks = []
-            current_chunk = []
-            current_len = 0
+        yt_translated = False
+        if transcript.is_translatable:
+            try:
+                trans_obj = transcript.translate(translate_to)
+                fetched_trans = trans_obj.fetch()
+                translated_lines = []
+                for s in fetched_trans:
+                    if isinstance(s, dict):
+                        translated_lines.append(TranscriptLine(text=s["text"], start=s["start"], duration=s["duration"]))
+                    else:
+                        translated_lines.append(TranscriptLine(text=s.text, start=s.start, duration=s.duration))
+                if translated_lines:
+                    lines = translated_lines
+                    yt_translated = True
+            except Exception:
+                yt_translated = False
 
-            # Güvenli çeviri için metinleri temizle ve parçalara böl (Google 5000 char limit)
-            for line in lines:
-                clean_text = line.text.replace("\n", " ").strip()
-                if not clean_text:
-                    clean_text = " "
-                
-                if current_len + len(clean_text) > chunk_size and current_chunk:
+        if not yt_translated:
+            try:
+                from deep_translator import GoogleTranslator
+
+                chunk_size = 4000
+                chunks = []
+                current_chunk = []
+                current_len = 0
+
+                # Güvenli çeviri için metinleri temizle ve parçalara böl (Google 5000 char limit)
+                for line in lines:
+                    clean_text = line.text.replace("\n", " ").strip()
+                    if not clean_text:
+                        clean_text = " "
+
+                    if current_len + len(clean_text) > chunk_size and current_chunk:
+                        chunks.append("\n".join(current_chunk))
+                        current_chunk = []
+                        current_len = 0
+
+                    current_chunk.append(clean_text)
+                    current_len += len(clean_text) + 1
+
+                if current_chunk:
                     chunks.append("\n".join(current_chunk))
-                    current_chunk = []
-                    current_len = 0
-                
-                current_chunk.append(clean_text)
-                current_len += len(clean_text) + 1
 
-            if current_chunk:
-                chunks.append("\n".join(current_chunk))
+                # Thread havuzu yerine sırayla çeviri yapıyoruz (Google 500 / Too Many Requests hatasını önlemek için)
+                translated_lines = []
+                translator = GoogleTranslator(source='auto', target=translate_to)
+                for chunk_str in chunks:
+                    res = translator.translate(chunk_str)
+                    if res:
+                        translated_lines.extend(res.split("\n"))
 
-            # Thread havuzu yerine sırayla çeviri yapıyoruz (Google 500 / Too Many Requests hatasını önlemek için)
-            translated_lines = []
-            translator = GoogleTranslator(source='auto', target=translate_to)
-            for chunk_str in chunks:
-                res = translator.translate(chunk_str)
-                if res:
-                    translated_lines.extend(res.split("\n"))
-
-            # Sonuçları eşleştir
-            for i, line in enumerate(lines):
-                if i < len(translated_lines):
-                    line.text = translated_lines[i].strip()
-        except Exception as e:
-            raise ValueError(f"Çeviri işlemi başarısız oldu (Google Translate API): {str(e)}")
+                # Sonuçları eşleştir
+                for i, line in enumerate(lines):
+                    if i < len(translated_lines):
+                        line.text = translated_lines[i].strip()
+            except Exception as e:
+                raise ValueError(f"Çeviri işlemi başarısız oldu (Google Translate API): {str(e)}")
 
     return fetched, lines
 
 
 # ──────────────────────────── KAYDEDİLENLER VERİTABANI ─────────────────────────
-SAVED_DIR = Path("saved")
+BASE_DIR = Path(__file__).resolve().parent
+SAVED_DIR = BASE_DIR / "saved"
 SAVED_FILE = SAVED_DIR / "saved_videos.json"
 SETTINGS_FILE = SAVED_DIR / "settings.json"
 
@@ -412,6 +431,7 @@ def get_formats(video_id: str):
 # ──────────────────────────── 6. VİDEO/SES YEREL İNDİRME & BİRLEŞTİRME (TASK SİSTEMİ) ────────────
 
 import threading
+import time
 import uuid
 from pydantic import BaseModel
 
@@ -433,14 +453,18 @@ def _run_download_task(task_id: str, video_id: str, format_id: str):
 
     def my_hook(d):
         if d['status'] == 'downloading':
-            # Örn: " 45.2%" -> "45.2%"
             percent = d.get('_percent_str', '').strip()
-            # Renkli terminal karakterlerini temizle
             import re
-            percent = re.sub(r'\x1b\[[0-9;]*m', '', percent)
-            DOWNLOAD_TASKS[task_id]["progress"] = percent or "İndiriliyor..."
+            clean_percent = re.sub(r'\x1b\[[0-9;]*m', '', percent)
+            num_match = re.search(r'([0-9]+(?:\.[0-9]+)?)', clean_percent)
+            numeric_val = float(num_match.group(1)) if num_match else 0
+            if task_id in DOWNLOAD_TASKS:
+                DOWNLOAD_TASKS[task_id]["percent"] = numeric_val
+                DOWNLOAD_TASKS[task_id]["progress"] = clean_percent or "İndiriliyor..."
         elif d['status'] == 'finished':
-            DOWNLOAD_TASKS[task_id]["progress"] = "Birleştiriliyor (FFmpeg)..."
+            if task_id in DOWNLOAD_TASKS:
+                DOWNLOAD_TASKS[task_id]["percent"] = 100
+                DOWNLOAD_TASKS[task_id]["progress"] = "Birleştiriliyor (FFmpeg)..."
 
     ydl_opts['progress_hooks'] = [my_hook]
 
@@ -458,39 +482,58 @@ def _run_download_task(task_id: str, video_id: str, format_id: str):
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=True)
-            
-        files = os.listdir(temp_dir)
+
+        files = [f for f in os.listdir(temp_dir) if not f.endswith('.part') and not f.endswith('.ytdl')]
+        if not files:
+            files = os.listdir(temp_dir)
         if not files:
             raise Exception("Dosya oluşturulamadı.")
-            
+
         filename = files[0]
         file_path = os.path.join(temp_dir, filename)
-        
-        DOWNLOAD_TASKS[task_id]["ready"] = True
-        DOWNLOAD_TASKS[task_id]["file_path"] = file_path
-        DOWNLOAD_TASKS[task_id]["filename"] = filename
-        DOWNLOAD_TASKS[task_id]["temp_dir"] = temp_dir
-        DOWNLOAD_TASKS[task_id]["progress"] = "Tamamlandı"
-        
+
+        if task_id in DOWNLOAD_TASKS:
+            DOWNLOAD_TASKS[task_id]["ready"] = True
+            DOWNLOAD_TASKS[task_id]["file_path"] = file_path
+            DOWNLOAD_TASKS[task_id]["filename"] = filename
+            DOWNLOAD_TASKS[task_id]["temp_dir"] = temp_dir
+            DOWNLOAD_TASKS[task_id]["percent"] = 100
+            DOWNLOAD_TASKS[task_id]["progress"] = "Tamamlandı"
+
     except Exception as exc:
         shutil.rmtree(temp_dir, ignore_errors=True)
-        DOWNLOAD_TASKS[task_id]["error"] = str(exc)
+        if task_id in DOWNLOAD_TASKS:
+            DOWNLOAD_TASKS[task_id]["error"] = str(exc)
 
 @app.post("/api/download/start")
 def start_download(req: DownloadRequest):
+    # 30 dakikadan eski görevleri ve geçici klasörleri temizle
+    now = time.time()
+    expired_ids = [
+        tid for tid, t in DOWNLOAD_TASKS.items()
+        if now - t.get("created_at", now) > 1800
+    ]
+    for tid in expired_ids:
+        exp_dir = DOWNLOAD_TASKS[tid].get("temp_dir")
+        if exp_dir:
+            shutil.rmtree(exp_dir, ignore_errors=True)
+        DOWNLOAD_TASKS.pop(tid, None)
+
     task_id = str(uuid.uuid4())
     DOWNLOAD_TASKS[task_id] = {
         "ready": False,
         "progress": "Başlatılıyor...",
+        "percent": 0,
         "error": None,
         "file_path": None,
         "filename": None,
-        "temp_dir": None
+        "temp_dir": None,
+        "created_at": now
     }
-    
+
     t = threading.Thread(target=_run_download_task, args=(task_id, req.video_id, req.format_id))
     t.start()
-    
+
     return {"task_id": task_id}
 
 @app.get("/api/download/status/{task_id}")
@@ -501,6 +544,7 @@ def get_download_status(task_id: str):
     return {
         "ready": task["ready"],
         "progress": task["progress"],
+        "percent": task.get("percent", 0),
         "error": task["error"]
     }
 
@@ -509,28 +553,21 @@ def get_download_file(task_id: str):
     task = DOWNLOAD_TASKS.get(task_id)
     if not task or not task["ready"]:
         raise HTTPException(status_code=400, detail="Dosya hazır değil veya bulunamadı.")
-    
+
     file_path = task["file_path"]
     filename = task["filename"]
     temp_dir = task["temp_dir"]
-    
+
     def cleanup():
         shutil.rmtree(temp_dir, ignore_errors=True)
         # Görevi bellekten sil
         if task_id in DOWNLOAD_TASKS:
             del DOWNLOAD_TASKS[task_id]
 
-    safe_filename = quote(filename)
-    headers = {
-        "Content-Disposition": f"attachment; filename*=UTF-8''{safe_filename}",
-        "Content-Type": "application/octet-stream",
-    }
-
     return FileResponse(
         path=file_path,
         filename=filename,
-        background=BackgroundTask(cleanup),
-        headers=headers
+        background=BackgroundTask(cleanup)
     )
 
 # ──────────────────────────── 8. AI SUMMARY ─────────────────────────

@@ -60,16 +60,16 @@ export default function BulkDownloadModal({ videos, onClose }) {
           const interval = setInterval(async () => {
             try {
               const statusRes = await axios.get(`${API}/download/status/${taskId}`)
-              const { ready, progress, error: dlError } = statusRes.data
+              const { ready, progress, percent, error: dlError } = statusRes.data
 
               if (dlError) {
                 clearInterval(interval)
                 setProgressLog(prev => ({ ...prev, [video.id]: { status: 'error', percent: 0 } }))
-                resolve() 
+                resolve()
               } else if (ready) {
                 clearInterval(interval)
-                setProgressLog(prev => ({ ...prev, [video.id]: { status: 'ready', percent: 100 } }))
-                
+                setProgressLog(prev => ({ ...prev, [video.id]: { status: 'ready', percent: 100, progressText: 'Tamamlandı' } }))
+
                 const iframe = document.createElement('iframe')
                 iframe.style.display = 'none'
                 iframe.src = `${API}/download/file/${taskId}`
@@ -78,7 +78,15 @@ export default function BulkDownloadModal({ videos, onClose }) {
 
                 resolve()
               } else {
-                setProgressLog(prev => ({ ...prev, [video.id]: { status: 'downloading', percent: progress || 0 } }))
+                const numericPercent = typeof percent === 'number' ? percent : (parseFloat(progress) || 0)
+                setProgressLog(prev => ({
+                  ...prev,
+                  [video.id]: {
+                    status: 'downloading',
+                    percent: Math.min(100, Math.max(0, numericPercent)),
+                    progressText: progress || `${numericPercent}%`
+                  }
+                }))
               }
             } catch (err) {
               clearInterval(interval)
@@ -136,7 +144,7 @@ export default function BulkDownloadModal({ videos, onClose }) {
                   >
                     {formats.map((fmt, idx) => (
                       <option key={idx} value={fmt.format_id}>
-                        {fmt.ext.toUpperCase()} - {fmt.resolution !== 'audio only' ? fmt.resolution : 'Sadece Ses'}
+                        {fmt.ext.toUpperCase()} - {fmt.resolution ? fmt.resolution : 'Sadece Ses'}
                       </option>
                     ))}
                   </select>
@@ -146,10 +154,10 @@ export default function BulkDownloadModal({ videos, onClose }) {
           ) : (
             <div className="space-y-3">
               <div className="mb-4 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                {downloadState === 'downloading' ? 'İndiriliyor...' : 'İndirme Tamamlandı!'} 
+                {downloadState === 'downloading' ? 'İndiriliyor...' : 'İndirme Tamamlandı!'}
                 ({completedCount} / {videos.length})
               </div>
-              
+
               {videos.map(v => {
                 const log = progressLog[v.id] || { status: 'waiting', percent: 0 }
                 return (
@@ -157,15 +165,19 @@ export default function BulkDownloadModal({ videos, onClose }) {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-zinc-800 dark:text-zinc-200 line-clamp-1 w-[80%]">{v.title}</span>
                       {log.status === 'waiting' && <span className="text-xs text-zinc-400">Bekliyor</span>}
-                      {log.status === 'downloading' && <span className="text-xs text-blue-500 font-medium">{log.percent}%</span>}
+                      {log.status === 'downloading' && (
+                        <span className="text-xs text-blue-500 font-medium">
+                          {log.progressText?.includes('%') ? log.progressText : `${log.percent}%`}
+                        </span>
+                      )}
                       {log.status === 'ready' && <CheckCircle2 size={16} className="text-green-500" />}
                       {log.status === 'error' && <AlertCircle size={16} className="text-red-500" />}
                     </div>
                     {log.status === 'downloading' && (
                       <div className="h-1.5 w-full bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full bg-blue-500 transition-all duration-300"
-                          style={{ width: `${Math.max(log.percent, 5)}%` }}
+                          style={{ width: `${Math.max(log.percent || 0, 5)}%` }}
                         />
                       </div>
                     )}

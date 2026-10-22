@@ -212,9 +212,9 @@ export default function TranscriptTab({
               <mark
                 key={i}
                 className={`rounded-sm px-0.5 ${
-                  isCurrentMatchLine 
-                    ? 'bg-orange-500 text-white font-medium shadow-sm' 
-                    : 'bg-yellow-500/40 text-yellow-100'
+                  isCurrentMatchLine
+                    ? 'bg-orange-500 text-white font-medium shadow-sm'
+                    : 'bg-yellow-300 dark:bg-yellow-500/40 text-yellow-950 dark:text-yellow-100'
                 }`}
               >
                 {part}
@@ -412,7 +412,7 @@ export default function TranscriptTab({
             {/* Export butonu */}
             <button
               onClick={() => setShowExportModal(true)}
-              className="flex items-center gap-1.5 flex-1 justify-center bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-200 hover:dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 flex-1 justify-center bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
             >
               <Download size={13} />
               Dışa Aktar
@@ -422,7 +422,7 @@ export default function TranscriptTab({
 
         {/* ── ARAMA ÇUBUĞU (Ctrl+F) ── */}
         {isSearchVisible && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100/80 dark:bg-zinc-200 dark:bg-zinc-800/80 rounded-lg border border-zinc-300 dark:border-zinc-600 shadow-sm mt-0.5">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100/80 dark:bg-zinc-800/80 rounded-lg border border-zinc-300 dark:border-zinc-600 shadow-sm mt-0.5">
             <Search size={14} className="text-zinc-600 dark:text-zinc-400 shrink-0" />
             <input
               ref={searchInputRef}
@@ -448,7 +448,7 @@ export default function TranscriptTab({
               <button
                 onClick={handlePrevMatch}
                 disabled={matchIndices.length === 0}
-                className="p-1 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 hover:dark:text-zinc-100 hover:bg-zinc-200 hover:dark:bg-zinc-700 rounded disabled:opacity-30 cursor-pointer transition-colors"
+                className="p-1 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded disabled:opacity-30 cursor-pointer transition-colors"
                 title="Önceki (Shift+Enter)"
               >
                 <ChevronUp size={16} />
@@ -456,7 +456,7 @@ export default function TranscriptTab({
               <button
                 onClick={handleNextMatch}
                 disabled={matchIndices.length === 0}
-                className="p-1 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 hover:dark:text-zinc-100 hover:bg-zinc-200 hover:dark:bg-zinc-700 rounded disabled:opacity-30 cursor-pointer transition-colors"
+                className="p-1 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded disabled:opacity-30 cursor-pointer transition-colors"
                 title="Sonraki (Enter)"
               >
                 <ChevronDown size={16} />
@@ -466,7 +466,7 @@ export default function TranscriptTab({
                   setIsSearchVisible(false)
                   setSearchQuery('')
                 }}
-                className="p-1 text-zinc-600 dark:text-zinc-400 hover:text-red-400 hover:bg-zinc-200 hover:dark:bg-zinc-700 rounded cursor-pointer transition-colors ml-1"
+                className="p-1 text-zinc-600 dark:text-zinc-400 hover:text-red-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded cursor-pointer transition-colors ml-1"
                 title="Kapat (Esc)"
               >
                 <X size={16} />
@@ -726,7 +726,7 @@ export default function TranscriptTab({
             <div className="flex gap-3 pt-1">
               <button
                 onClick={() => setShowExportModal(false)}
-                className="flex-1 py-2.5 text-sm bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-200 hover:dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
+                className="flex-1 py-2.5 text-sm bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer"
               >
                 İptal
               </button>

@@ -31,10 +31,26 @@ export default function App() {
 
 
 
-  // ── Sayfa ilk açıldığında Backend'den Kaydedilenleri Çek ──
+  // ── Sayfa ilk açıldığında Backend'den Kaydedilenleri ve Ayarları Çek ──
   useEffect(() => {
     fetchSavedVideos()
+    fetchSettings()
   }, [])
+
+  async function fetchSettings() {
+    try {
+      const { data } = await axios.get(`${API}/settings`)
+      if (data) {
+        if (data.ai_provider) localStorage.setItem('aiProvider', data.ai_provider)
+        if (data.ai_api_key) localStorage.setItem('aiApiKey', data.ai_api_key)
+        if (typeof data.smart_memory === 'boolean') {
+          localStorage.setItem('setting_smartMemory', String(data.smart_memory))
+        }
+      }
+    } catch (err) {
+      console.error('Ayarlar yüklenirken hata:', err)
+    }
+  }
 
   // ── Tema Değişimi ──
   useEffect(() => {
